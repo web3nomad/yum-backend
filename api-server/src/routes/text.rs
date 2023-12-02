@@ -3,10 +3,23 @@ use std::env;
 use reqwest;
 use axum::{
     routing::post,
+    response::Json,
     Router,
 };
 
-async fn handler(body: String) -> String {
+const SYSTEM_PROMPT: &str = r#"
+你是一个 KFC 的美食专家，擅长撰写创意的 KFC 食物的名字。
+我将提供一些灵感来源，口味，和食物的类型，你的任务是：
+  - 生成一个创意的 KFC 食物的名字
+  - 直接输出名字，不要包含任何标点符号或者表情
+  - 长度在 5 到 10 个汉字之间
+如下是一个优秀文案的示例：
+  - 灯影云面包
+  - 绿野仙踪鸡腿堡
+  - 三潭印月脆皮鸡堡
+"#;
+
+async fn handler(body: String) -> Json<serde_json::Value> {
     // println!("Send: {}", body);
     // format!("Hello World {}\n", &body)
     let openai_token = env::var("OPENAI_TOKEN").unwrap();
@@ -18,7 +31,7 @@ async fn handler(body: String) -> String {
     let prompt = json_body["params"]["prompt"].as_str().unwrap();
     let messages = json!([{
         "role": "system",
-        "content": "你是一个 KFC 的美食专家，你的任务是根据需求，生成一个创意的 KFC 商品的名字，不超过 10 个中文汉字。直接输出名字，不要包含任何标点符号。"
+        "content": SYSTEM_PROMPT
     }, {
         "role": "user",
         "content": prompt
@@ -41,11 +54,19 @@ async fn handler(body: String) -> String {
         .unwrap();
     // println!("status = {}", res.status());
     let result_str = res.text().await.unwrap();
-    println!("res = {:?}", result_str);
+    // println!("res = {:?}", result_str);
     let json_data: serde_json::Value = serde_json::from_str(&result_str).unwrap();
     // println!("json_data = {:?}", json_data["choices"][0]["message"]["content"]);
     let message = json_data["choices"][0]["message"]["content"].as_str().unwrap().to_string();
-    message
+
+    // merge json_body to {"message": "Hello World"}
+    let res_json = json!({
+        "params": json_body["params"],
+        "result": {
+            "text": message
+        }
+    });
+    return Json(res_json);
 }
 
 pub fn get_routes() -> Router {
