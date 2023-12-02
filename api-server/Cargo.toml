@@ -13,3 +13,6 @@ rand = "0.8.5"
 reqwest = { version = "0.11.22", features = ["json"] }
 serde_json = "1.0.108"
 tokio = { version = "1.34.0", features = ["full"] }
+# TODO: use published crate for yum-backend in production
+sdwebuiapi = { path = "../../../rust/sdwebui-gateway/sdwebuiapi" }
+data-encoding = "2.5.0"
