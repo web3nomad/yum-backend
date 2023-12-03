@@ -1062,6 +1062,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-client"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "chrono",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "tinyvec"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
