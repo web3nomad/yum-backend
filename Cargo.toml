@@ -3,3 +3,4 @@ members = [
     'api-server',
     'test-client',
 ]
+resolver = '2'
