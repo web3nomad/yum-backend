@@ -2,6 +2,7 @@ use serde_json::json;
 use std::env;
 use std::sync::Arc;
 use tokio::sync::mpsc;
+use diesel::prelude::*;
 use axum::{
     routing::post,
     response::{Json, IntoResponse, Response},
@@ -9,7 +10,13 @@ use axum::{
     http::StatusCode,
 };
 
-struct Task {
+fn establish_connection() -> MysqlConnection {
+    let database_url = env::var("DATABASE_URL").unwrap();
+    MysqlConnection::establish(&database_url)
+        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+}
+
+struct TaskPayload {
     task_id: String,
     body: String,
 }
@@ -20,7 +27,10 @@ struct BadRequest {
 
 impl IntoResponse for BadRequest {
     fn into_response(self) -> Response {
-        let body = format!("Bad request: {}", self.message);
+        // let body = format!("Bad request: {}", self.message);
+        let body = Json(json!({
+            "error": self.message
+        }));
         let status = StatusCode::BAD_REQUEST;
         (status, body).into_response()
     }
@@ -28,15 +38,33 @@ impl IntoResponse for BadRequest {
 
 async fn handle_generate_image_request(
     body: String,
-    tx: Arc<mpsc::Sender<Task>>
+    tx: Arc<mpsc::Sender<TaskPayload>>
 ) -> Result<Json<serde_json::Value>, BadRequest> {
     let timestamp = chrono::Utc::now().timestamp_millis();
     let random = rand::random::<u32>() % 1000000;
     let task_id = &format!("{}-{:0>6}", timestamp, random);
-    let task = Task {
+
+    let body_json = serde_json::from_str::<serde_json::Value>(&body).unwrap();
+
+    use crate::schema::tasks;
+    use crate::models::NewTask;
+    let conn = &mut establish_connection();
+    let new_task = NewTask {
+        task_id: task_id,
+        params: &serde_json::to_string(&body_json["params"]).unwrap(),
+        result: "",
+        callback_url: body_json["resultCallbackUrl"].as_str().unwrap(),
+    };
+    diesel::insert_into(tasks::table)
+        .values(&new_task)
+        .execute(conn)
+        .expect("Error saving new task");
+
+    let task = TaskPayload {
         task_id: task_id.clone(),
         body,
     };
+
     if let Ok(()) = tx.try_send(task) {
         let res_json = json!({"taskId": &task_id});
         return Ok(Json(res_json));
@@ -98,19 +126,29 @@ async fn callback_generate_image(
             "src": &image_url
         }));
     }
+    let result = json!({
+        "images": images_payload
+    });
+
+    use crate::schema::tasks;
+    let conn = &mut establish_connection();
+    diesel::update(tasks::table)
+        .filter(tasks::task_id.eq(&task_id))
+        .set(tasks::result.eq(serde_json::to_string(&result).unwrap()))
+        .execute(conn)
+        .expect("Error updating task");
+
     let payload = json!({
         "taskId": task_id,
         "params": params,
-        "result": {
-            "images": images_payload
-        }
+        "result": result,
     });
     let client = reqwest::Client::new();
     client.post(callback_url).json(&payload).send().await.unwrap();
 }
 
 pub fn get_routes() -> Router {
-    let (tx, mut rx) = mpsc::channel::<Task>(2);
+    let (tx, mut rx) = mpsc::channel::<TaskPayload>(2);
 
     let tx = Arc::new(tx);
 
