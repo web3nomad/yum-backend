@@ -1,11 +1,20 @@
+mod schema;
+mod models;
 mod routes;
 // use crate::routes::test_routes::get_test_routes;
 use axum::Router;
 use dotenv::dotenv;
+use diesel::prelude::*;
+use std::env;
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
+
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    MysqlConnection::establish(&database_url)
+        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
+
     // build our application with a single route
     let app = Router::new()
         .merge(crate::routes::test_routes::get_test_routes())
