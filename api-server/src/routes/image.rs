@@ -139,7 +139,7 @@ pub fn get_routes() -> Router {
             let task_id = &task.task_id;
             println!("Start! {}", task_id);
             let prompt = params["prompt"].as_str().unwrap();
-            let images = crate::stablediffusion::webui::request(prompt).await;
+            let images = crate::stablediffusion::comfy::request(prompt).await;
             callback_generate_image(
                 task_id, &params, &images, callback_url
             ).await;

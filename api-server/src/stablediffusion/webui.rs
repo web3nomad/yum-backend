@@ -1,5 +1,6 @@
 use std::env;
 
+#[allow(dead_code)]
 pub async fn request(prompt: &str) -> Vec<String> {
     let webui_origin = env::var("SD_WEBUI_TEST_ORIGIN").unwrap();
     let api_auth = Some(sdwebuiapi::OpenApiV1Auth {

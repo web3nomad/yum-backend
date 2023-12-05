@@ -19,3 +19,4 @@ diesel = { version = "2.1.0", features = ["mysql", "chrono"] }
 
 # TODO: use published crate for yum-backend in production
 sdwebuiapi = { path = "../../../rust/sdwebui-gateway/sdwebuiapi" }
+futures = "0.3.29"
