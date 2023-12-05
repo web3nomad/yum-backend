@@ -15,8 +15,8 @@ pub async fn request(prompt: &str) -> Vec<String> {
     payload.set_base_model("DreamShaper_6_BakedVae.safetensors [b76cc78ad9]");
     let client = sdwebuiapi::Client::new(&webui_origin, api_auth);
     let response = client.txt2img(payload).await;
-    let images = response.images.iter().map(|raw_b64_str| {
+    let base64_images = response.images.iter().map(|raw_b64_str| {
         raw_b64_str.to_string()
     }).collect::<Vec<String>>();
-    return images;
+    return base64_images;
 }

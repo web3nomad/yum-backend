@@ -10,11 +10,11 @@ async fn fetch_images(images_urls: Vec<String>) -> Vec<String> {
         // println!("image_url: {:?}", image_url);
         return data_encoding::BASE64.encode(&image_bytes);
     }
-    let images = images_urls
+    let base64_images = images_urls
         .iter()
         .map(|url| fetch(url))
         .collect::<Vec<_>>();
-    join_all(images).await
+    return join_all(base64_images).await;
 }
 
 #[allow(dead_code)]
@@ -32,7 +32,7 @@ pub async fn request(prompt: &str) -> Vec<String> {
     // println!("body: {:?}", res.text().await.unwrap());
     let res_body_json: serde_json::Value = serde_json::from_str(&res_body_text).unwrap();
     let prompt_id = res_body_json["prompt_id"].as_str().unwrap();
-    let images: Vec<String>;
+    let base64_images: Vec<String>;
     loop {
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         let url = format!("{}/history/{}", comfy_origin, prompt_id);
@@ -50,11 +50,11 @@ pub async fn request(prompt: &str) -> Vec<String> {
                     format!("{}/view?filename={}&subfolder=&type=output", comfy_origin, filename)
                 })
                 .collect();
-            images = fetch_images(images_urls).await;
+            base64_images = fetch_images(images_urls).await;
             break;
         }
     }
-    return images;
+    return base64_images;
 }
 
 const COMFY_API_TPL: &'static str = r#"

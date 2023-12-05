@@ -9,6 +9,9 @@ use axum::{
     Router,
     http::StatusCode,
 };
+use crate::schema::tasks;
+use crate::models::NewTask;
+// use crate::models::Task;
 
 fn establish_connection() -> MysqlConnection {
     let database_url = env::var("DATABASE_URL").unwrap();
@@ -18,7 +21,8 @@ fn establish_connection() -> MysqlConnection {
 
 struct TaskPayload {
     task_id: String,
-    body: String,
+    params: serde_json::Value,
+    callback_url: String,
 }
 
 struct BadRequest {
@@ -42,30 +46,29 @@ async fn handle_generate_image_request(
 ) -> Result<Json<serde_json::Value>, BadRequest> {
     let timestamp = chrono::Utc::now().timestamp_millis();
     let random = rand::random::<u32>() % 1000000;
-    let task_id = &format!("{}-{:0>6}", timestamp, random);
+    let task_id = format!("{}-{:0>6}", timestamp, random);
 
     let body_json = serde_json::from_str::<serde_json::Value>(&body).unwrap();
 
-    use crate::schema::tasks;
-    use crate::models::NewTask;
+    let task_payload = TaskPayload {
+        task_id: task_id.clone(),
+        params: body_json["params"].to_owned(),
+        callback_url: body_json["resultCallbackUrl"].to_string(),
+    };
+
     let conn = &mut establish_connection();
     let new_task = NewTask {
-        task_id: task_id,
-        params: &serde_json::to_string(&body_json["params"]).unwrap(),
+        task_id: &task_payload.task_id,
+        params: &serde_json::to_string(&task_payload.params).unwrap(),
         result: "",
-        callback_url: body_json["resultCallbackUrl"].as_str().unwrap(),
+        callback_url: &task_payload.callback_url,
     };
     diesel::insert_into(tasks::table)
         .values(&new_task)
         .execute(conn)
         .expect("Error saving new task");
 
-    let task = TaskPayload {
-        task_id: task_id.clone(),
-        body,
-    };
-
-    if let Ok(()) = tx.try_send(task) {
+    if let Ok(()) = tx.try_send(task_payload) {
         let res_json = json!({"taskId": &task_id});
         return Ok(Json(res_json));
     } else {
@@ -73,43 +76,44 @@ async fn handle_generate_image_request(
     }
 }
 
-async fn callback_generate_image(
-    task_id: &str,
-    params: &serde_json::Value,
-    images: &Vec<String>,
-    callback_url: &str,
-) {
-    let images = images.iter().enumerate().map(|(i, image)| {
-        let filename = format!("{}-{}.png", task_id, i);
-        let base64 = image;
-        ( filename, base64 )
-    }).collect::<Vec<_>>();
+async fn callback_generate_image(task_payload: &TaskPayload, base64_images: &Vec<String>) {
+    let task_id: &str = &task_payload.task_id;
+    let images = base64_images
+        .iter()
+        .enumerate()
+        .map(|(i, base64_image)| {
+            let filename = format!("{}-{}.png", task_id, i);
+            ( filename, base64_image )
+        }).collect::<Vec<_>>();
     let image_urls = crate::storage::azure::upload_images(&images).await;
-    let images_payload = image_urls.iter().map(|image_url| {
-        json!({
-            "src": image_url
-        })
-    }).collect::<Vec<_>>();
 
     let result = json!({
-        "images": images_payload
+        "images": image_urls.iter().map(|image_url| {
+            json!({
+                "src": image_url
+            })
+        }).collect::<Vec<_>>()
     });
 
-    use crate::schema::tasks;
     let conn = &mut establish_connection();
     diesel::update(tasks::table)
-        .filter(tasks::task_id.eq(&task_id))
+        .filter(tasks::task_id.eq(task_id))
         .set(tasks::result.eq(serde_json::to_string(&result).unwrap()))
         .execute(conn)
         .expect("Error updating task");
 
-    let payload = json!({
-        "taskId": task_id,
-        "params": params,
-        "result": result,
-    });
-    let client = reqwest::Client::new();
-    client.post(callback_url).json(&payload).send().await.unwrap();
+    let callback_res = reqwest::Client::new()
+        .post(&task_payload.callback_url)
+        .json(&json!({
+            "taskId": task_id,
+            "params": task_payload.params,
+            "result": result,
+        }))
+        .send().await;
+    match callback_res {
+        Ok(_) => println!("Task {} callback success", task_id),
+        Err(e) => println!("Task {} callback failed: {}", task_id, e)
+    }
 }
 
 pub fn get_routes() -> Router {
@@ -118,18 +122,16 @@ pub fn get_routes() -> Router {
     let tx = Arc::new(tx);
 
     tokio::spawn(async move {
-        while let Some(task) = rx.recv().await {
-            let body_json = serde_json::from_str::<serde_json::Value>(&task.body).unwrap();
-            let callback_url = body_json["resultCallbackUrl"].as_str().unwrap();
-            let params = body_json["params"].clone();
-            let task_id = &task.task_id;
-            println!("Start! {}", task_id);
-            let prompt = params["prompt"].as_str().unwrap();
-            let images = crate::stablediffusion::comfy::request(prompt).await;
+        while let Some(task_payload) = rx.recv().await {
+            let task_id = &task_payload.task_id;
+            println!("Task {} started", task_id);
+            let prompt = task_payload.params["prompt"].as_str().unwrap();
+            let base64_images = crate::stablediffusion::comfy::request(prompt).await;
+            println!("Task {} comfy success", task_id);
             callback_generate_image(
-                task_id, &params, &images, callback_url
+                &task_payload, &base64_images
             ).await;
-            println!("End! {}", task_id);
+            println!("Task {} end", task_id);
         }
     });
 
