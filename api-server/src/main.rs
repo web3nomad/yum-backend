@@ -1,5 +1,6 @@
 mod schema;
 mod models;
+mod stablediffusion;
 mod routes;
 // use crate::routes::test_routes::get_test_routes;
 use axum::Router;
