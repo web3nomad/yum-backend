@@ -79,32 +79,18 @@ async fn callback_generate_image(
     images: &Vec<String>,
     callback_url: &str,
 ) {
-    let mut builder = opendal::services::Azblob::default();
-    let azblob_endpoint = env::var("AZBLOB_ENDPOINT").unwrap();
-    let azblob_key = env::var("AZBLOB_KEY").unwrap();
-    let azblob_container = env::var("AZBLOB_CONTAINER").unwrap();
-    let azblob_account = env::var("AZBLOB_ACCOUNT").unwrap();
-    builder.root("/");
-    builder.container(&azblob_container);
-    builder.endpoint(&azblob_endpoint);
-    builder.account_name(&azblob_account);
-    builder.account_key(&azblob_key);
-    let op = opendal::Operator::new(builder).unwrap().finish();
-
-    let mut images_payload: Vec<serde_json::Value> = vec![];
-    for (i, raw_b64_str) in images.iter().enumerate() {
-        // let raw_b64_str = &response.images[i];
-        // TODO: remove this debug code in production
-        let output_image = data_encoding::BASE64.decode(raw_b64_str.as_bytes()).unwrap();
-        std::fs::create_dir_all("test-client/output").unwrap();
+    let images = images.iter().enumerate().map(|(i, image)| {
         let filename = format!("{}-{}.png", task_id, i);
-        std::fs::write(&format!("test-client/output/{}", &filename), &output_image).unwrap();
-        op.write(&filename, output_image).await.unwrap();
-        let image_url = format!("{}{}/{}", &azblob_endpoint, &azblob_container, &filename);
-        images_payload.push(json!({
-            "src": &image_url
-        }));
-    }
+        let base64 = image;
+        ( filename, base64 )
+    }).collect::<Vec<_>>();
+    let image_urls = crate::storage::azure::upload_images(&images).await;
+    let images_payload = image_urls.iter().map(|image_url| {
+        json!({
+            "src": image_url
+        })
+    }).collect::<Vec<_>>();
+
     let result = json!({
         "images": images_payload
     });
