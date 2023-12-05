@@ -43,7 +43,7 @@ impl IntoResponse for BadRequest {
 async fn handle_generate_image_request(
     body: String,
     tx: Arc<mpsc::Sender<TaskPayload>>
-) -> Result<Json<serde_json::Value>, BadRequest> {
+) -> Result<Json<serde_json::Value>, impl IntoResponse> {
     let timestamp = chrono::Utc::now().timestamp_millis();
     let random = rand::random::<u32>() % 1000000;
     let task_id = format!("{}-{:0>6}", timestamp, random);
@@ -123,14 +123,21 @@ pub fn get_routes() -> Router {
 
     tokio::spawn(async move {
         while let Some(task_payload) = rx.recv().await {
+            let conn = &mut establish_connection();
             let task_id = &task_payload.task_id;
             println!("Task {} started", task_id);
+            diesel::update(tasks::table)
+                .filter(tasks::task_id.eq(task_id))
+                .set(tasks::starts_at.eq(chrono::Utc::now().naive_utc()))
+                .execute(conn).unwrap();
             let prompt = task_payload.params["prompt"].as_str().unwrap();
             let base64_images = crate::stablediffusion::comfy::request(prompt).await;
             println!("Task {} comfy success", task_id);
-            callback_generate_image(
-                &task_payload, &base64_images
-            ).await;
+            callback_generate_image(&task_payload, &base64_images).await;
+            diesel::update(tasks::table)
+                .filter(tasks::task_id.eq(task_id))
+                .set(tasks::ends_at.eq(chrono::Utc::now().naive_utc()))
+                .execute(conn).unwrap();
             println!("Task {} end", task_id);
         }
     });
