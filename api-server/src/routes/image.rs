@@ -2,13 +2,13 @@ use serde_json::json;
 use std::env;
 use std::sync::Arc;
 use tokio::sync::mpsc;
-use diesel::prelude::*;
 use axum::{
-    routing::post,
+    routing::{post, get},
     response::{Json, IntoResponse, Response},
     Router,
     http::StatusCode,
 };
+use diesel::prelude::*;
 use crate::schema::tasks;
 use crate::models::NewTask;
 // use crate::models::Task;
@@ -53,7 +53,7 @@ async fn handle_generate_image_request(
     let task_payload = TaskPayload {
         task_id: task_id.clone(),
         params: body_json["params"].to_owned(),
-        callback_url: body_json["resultCallbackUrl"].to_string(),
+        callback_url: body_json["resultCallbackUrl"].as_str().unwrap().to_string(),
     };
 
     let conn = &mut establish_connection();
@@ -146,6 +146,13 @@ pub fn get_routes() -> Router {
         .route("/api/yum/generate/image", post({
             let tx = Arc::clone(&tx);
             |body: String| handle_generate_image_request(body, tx)
+        }))
+        .route("/api/yum/generate/queueInfo", get(|| async {
+            let queue_info = json!({
+                "pendingTasks": 5,
+                "executingTasks": 1,
+            });
+            Json(queue_info)
         }));
     return router;
 }
