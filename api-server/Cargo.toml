@@ -18,5 +18,6 @@ opendal = "0.41.0"
 diesel = { version = "2.1.0", features = ["mysql", "chrono"] }
 
 # TODO: use published crate for yum-backend in production
-sdwebuiapi = { path = "../../../rust/sdwebui-gateway/sdwebuiapi" }
+# sdwebuiapi = { path = "../../../rust/sdwebui-gateway/sdwebuiapi" }
+sdwebuiapi = "0.0.6"
 futures = "0.3.29"

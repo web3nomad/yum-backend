@@ -1528,6 +1528,8 @@ dependencies = [
 [[package]]
 name = "sdwebuiapi"
 version = "0.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b9ee3a7612f0fcb3827f358a039f39362af96f7ecd80c4f1a33ca59073c086a"
 dependencies = [
  "reqwest",
  "serde",
