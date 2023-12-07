@@ -1,0 +1,14 @@
+{{- range .Values.tlsSecret.secrets }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .name }}
+  namespace: yum
+type: kubernetes.io/tls
+data:
+  tls.crt: |-
+    {{ $.Files.Get .crt | b64enc }}
+  tls.key: |-
+    {{ $.Files.Get .key | b64enc }}
+---
+{{- end }}

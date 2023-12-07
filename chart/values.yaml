@@ -1,0 +1,10 @@
+
+tlsSecret:
+  secrets:
+    - name: wildcard-webui-museai-cc
+      key: "" # set in ./secrets/values.yaml
+      crt: "" # set in ./secrets/values.yaml
+
+yumBackend:
+  imageTag: a90f8af
+  env: [] # set envs in ./secrets/values.yaml
