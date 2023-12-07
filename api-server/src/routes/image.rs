@@ -111,8 +111,8 @@ async fn callback_generate_image(task_payload: &TaskPayload, base64_images: &Vec
         }))
         .send().await;
     match callback_res {
-        Ok(_) => println!("Task {} callback success", task_id),
-        Err(e) => println!("Task {} callback failed: {}", task_id, e)
+        Ok(_) => tracing::info!("Task {} callback success", task_id),
+        Err(e) => tracing::info!("Task {} callback failed: {}", task_id, e)
     }
 }
 
@@ -125,20 +125,23 @@ pub fn get_routes() -> Router {
         while let Some(task_payload) = rx.recv().await {
             let conn = &mut establish_connection();
             let task_id = &task_payload.task_id;
-            println!("Task {} started", task_id);
+            tracing::info!("Task {} started", task_id);
             diesel::update(tasks::table)
                 .filter(tasks::task_id.eq(task_id))
                 .set(tasks::starts_at.eq(chrono::Utc::now().naive_utc()))
                 .execute(conn).unwrap();
             let prompt = task_payload.params["prompt"].as_str().unwrap();
-            let base64_images = crate::stablediffusion::comfy::request(prompt).await;
-            println!("Task {} comfy success", task_id);
-            callback_generate_image(&task_payload, &base64_images).await;
-            diesel::update(tasks::table)
-                .filter(tasks::task_id.eq(task_id))
-                .set(tasks::ends_at.eq(chrono::Utc::now().naive_utc()))
-                .execute(conn).unwrap();
-            println!("Task {} end", task_id);
+            if let Ok(base64_images) = crate::stablediffusion::comfy::request(prompt).await {
+                tracing::info!("Task {} comfy success", task_id);
+                callback_generate_image(&task_payload, &base64_images).await;
+                diesel::update(tasks::table)
+                    .filter(tasks::task_id.eq(task_id))
+                    .set(tasks::ends_at.eq(chrono::Utc::now().naive_utc()))
+                    .execute(conn).unwrap();
+                tracing::info!("Task {} end", task_id);
+            } else {
+                tracing::info!("Task {} comfy failed", task_id);
+            }
         }
     });
 

@@ -3,8 +3,9 @@ use std::env;
 use reqwest;
 use axum::{
     routing::post,
-    response::Json,
+    response::{Json, IntoResponse},
     Router,
+    http::StatusCode,
 };
 
 const SYSTEM_PROMPT: &str = r#"
@@ -19,9 +20,7 @@ const SYSTEM_PROMPT: &str = r#"
   - 三潭印月脆皮鸡堡
 "#;
 
-async fn handler(body: String) -> Json<serde_json::Value> {
-    // println!("Send: {}", body);
-    // format!("Hello World {}\n", &body)
+async fn handler(body: String) -> Result<Json<serde_json::Value>, impl IntoResponse> {
     let openai_token = env::var("OPENAI_TOKEN").unwrap();
     let model_name = "gpt-4";
     let version = "2023-07-01-preview";
@@ -44,14 +43,19 @@ async fn handler(body: String) -> Json<serde_json::Value> {
         "messages": messages,
         "temperature": 1,
     });
-    let res = reqwest::Client::new()
+    let res = match reqwest::Client::new()
         .post(url)
         .header("Content-Type", "application/json")
         .header("api-key", openai_token)
         .json(&payload)
         .send()
-        .await
-        .unwrap();
+        .await {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::error!("Error: {:?}", e);
+                return Err((StatusCode::INTERNAL_SERVER_ERROR, "Server Error").into_response());
+            }
+        };
     // println!("status = {}", res.status());
     let result_str = res.text().await.unwrap();
     // println!("res = {:?}", result_str);
@@ -66,7 +70,7 @@ async fn handler(body: String) -> Json<serde_json::Value> {
             "text": message
         }
     });
-    return Json(res_json);
+    return Ok(Json(res_json));
 }
 
 pub fn get_routes() -> Router {
