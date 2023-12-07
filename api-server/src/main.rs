@@ -11,7 +11,7 @@ use axum::{
     routing::get,
     Router,
 };
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use diesel::prelude::*;
 use std::env;
 
