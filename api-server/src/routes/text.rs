@@ -1,6 +1,4 @@
 use serde_json::json;
-use std::env;
-use reqwest;
 use axum::{
     routing::post,
     response::{Json, IntoResponse},
@@ -21,51 +19,18 @@ const SYSTEM_PROMPT: &str = r#"
 "#;
 
 async fn handler(body: String) -> Result<Json<serde_json::Value>, impl IntoResponse> {
-    let openai_token = env::var("OPENAI_TOKEN").unwrap();
-    let model_name = "gpt-4";
-    let version = "2023-07-01-preview";
-    let endpoint = "museai1";
-
     let json_body: serde_json::Value = serde_json::from_str(&body).unwrap();
+    let params = &json_body["params"];
     let prompt = json_body["params"]["prompt"].as_str().unwrap();
-    let messages = json!([{
-        "role": "system",
-        "content": SYSTEM_PROMPT
-    }, {
-        "role": "user",
-        "content": prompt
-    }]);
-
-    let url = format!(
-        "https://{}.openai.azure.com/openai/deployments/{}/chat/completions?api-version={}",
-        endpoint, model_name, version);
-    let payload = json!({
-        "messages": messages,
-        "temperature": 1,
-    });
-    let res = match reqwest::Client::new()
-        .post(url)
-        .header("Content-Type", "application/json")
-        .header("api-key", openai_token)
-        .json(&payload)
-        .send()
-        .await {
-            Ok(v) => v,
-            Err(e) => {
-                tracing::error!("Error: {:?}", e);
-                return Err((StatusCode::INTERNAL_SERVER_ERROR, "Server Error").into_response());
-            }
-        };
-    // println!("status = {}", res.status());
-    let result_str = res.text().await.unwrap();
-    // println!("res = {:?}", result_str);
-    let json_data: serde_json::Value = serde_json::from_str(&result_str).unwrap();
-    // println!("json_data = {:?}", json_data["choices"][0]["message"]["content"]);
-    let message = json_data["choices"][0]["message"]["content"].as_str().unwrap().to_string();
-
-    // merge json_body to {"message": "Hello World"}
+    let message = match crate::aigc::openai::request(&SYSTEM_PROMPT, prompt).await {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::error!("Error: {:?}", e);
+            return Err((StatusCode::INTERNAL_SERVER_ERROR, "Server Error").into_response());
+        }
+    };
     let res_json = json!({
-        "params": json_body["params"],
+        "params": params,
         "result": {
             "text": message
         }
