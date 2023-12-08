@@ -131,7 +131,7 @@ pub fn get_routes() -> Router {
                 .set(tasks::starts_at.eq(chrono::Utc::now().naive_utc()))
                 .execute(conn).unwrap();
             let prompt = task_payload.params["prompt"].as_str().unwrap();
-            if let Ok(base64_images) = crate::stablediffusion::comfy::request(prompt).await {
+            if let Ok(base64_images) = crate::aigc::comfy::request(prompt).await {
                 tracing::info!("Task {} comfy success", task_id);
                 callback_generate_image(&task_payload, &base64_images).await;
                 diesel::update(tasks::table)

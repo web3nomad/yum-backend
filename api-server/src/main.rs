@@ -2,7 +2,7 @@ mod schema;
 mod models;
 
 mod storage;
-mod stablediffusion;
+mod aigc;
 
 mod routes;
 
