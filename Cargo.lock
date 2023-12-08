@@ -61,6 +61,7 @@ dependencies = [
  "rand",
  "reqwest",
  "sdwebuiapi",
+ "serde",
  "serde_json",
  "tokio",
  "tracing",

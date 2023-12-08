@@ -25,6 +25,7 @@ pub struct Task {
 pub struct NewTask<'a> {
     pub task_id: &'a str,
     pub params: &'a str,
+    pub generation_params: &'a str,
     pub result: &'a str,
     pub callback_url: &'a str,
 }

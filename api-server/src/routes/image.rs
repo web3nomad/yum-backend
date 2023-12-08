@@ -1,4 +1,5 @@
 use serde_json::json;
+use serde::Serialize;
 use std::env;
 use std::sync::Arc;
 use tokio::sync::mpsc;
@@ -19,9 +20,16 @@ fn establish_connection() -> MysqlConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
+#[derive(Serialize)]
+struct GenerationParams {
+    prompt: String,
+    negative_prompt: String,
+}
+
 struct TaskPayload {
     task_id: String,
     params: serde_json::Value,
+    generation_params: GenerationParams,
     callback_url: String,
 }
 
@@ -40,6 +48,26 @@ impl IntoResponse for BadRequest {
     }
 }
 
+const SYSTEM_PROMPT: &str = r#"
+你是一个 KFC 的美食专家，擅长编写 Stable Diffusion 的 prompt 来生成 KFC 的食物图片。
+我将提供一些灵感来源，口味，和食物的类型，你的任务是：
+  - 生成一段可以生成创意 KFC 食物的 Stable Diffusion prompt
+  - 直接输出 prompt
+如下是一个优秀文案的示例：
+Food photography style.
+Chicken popcorn coated with a black Oreo-style crumb mixture.
+Appetizing, professional, culinary, high-resolution, commercial, highly detailed
+"#;
+
+async fn get_generation_params(params: &serde_json::Value) -> GenerationParams {
+    let prompt = params["prompt"].as_str().unwrap();
+    let message = crate::aigc::openai::request(&SYSTEM_PROMPT, prompt).await.unwrap();
+    GenerationParams {
+        prompt: message,
+        negative_prompt: String::from(""),
+    }
+}
+
 async fn handle_generate_image_request(
     body: String,
     tx: Arc<mpsc::Sender<TaskPayload>>
@@ -49,17 +77,22 @@ async fn handle_generate_image_request(
     let task_id = format!("{}-{:0>6}", timestamp, random);
 
     let body_json = serde_json::from_str::<serde_json::Value>(&body).unwrap();
+    let params = body_json["params"].to_owned();
+    let callback_url = body_json["resultCallbackUrl"].as_str().unwrap().to_string();
+    let generation_params = get_generation_params(&params).await;
 
     let task_payload = TaskPayload {
         task_id: task_id.clone(),
-        params: body_json["params"].to_owned(),
-        callback_url: body_json["resultCallbackUrl"].as_str().unwrap().to_string(),
+        params,
+        generation_params,
+        callback_url,
     };
 
     let conn = &mut establish_connection();
     let new_task = NewTask {
-        task_id: &task_payload.task_id,
+        task_id: &task_id,
         params: &serde_json::to_string(&task_payload.params).unwrap(),
+        generation_params: &serde_json::to_string(&task_payload.generation_params).unwrap(),
         result: "",
         callback_url: &task_payload.callback_url,
     };
@@ -116,6 +149,7 @@ async fn callback_generate_image(task_payload: &TaskPayload, base64_images: &Vec
     }
 }
 
+
 pub fn get_routes() -> Router {
     let (tx, mut rx) = mpsc::channel::<TaskPayload>(2);
 
@@ -130,7 +164,7 @@ pub fn get_routes() -> Router {
                 .filter(tasks::task_id.eq(task_id))
                 .set(tasks::starts_at.eq(chrono::Utc::now().naive_utc()))
                 .execute(conn).unwrap();
-            let prompt = task_payload.params["prompt"].as_str().unwrap();
+            let prompt = &task_payload.generation_params.prompt;
             if let Ok(base64_images) = crate::aigc::comfy::request(prompt).await {
                 tracing::info!("Task {} comfy success", task_id);
                 callback_generate_image(&task_payload, &base64_images).await;

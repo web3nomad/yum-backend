@@ -6,6 +6,7 @@ diesel::table! {
         #[max_length = 100]
         task_id -> Varchar,
         params -> Text,
+        generation_params -> Text,
         result -> Text,
         starts_at -> Nullable<Timestamp>,
         ends_at -> Nullable<Timestamp>,
@@ -13,6 +14,5 @@ diesel::table! {
         callback_url -> Varchar,
         created_at -> Timestamp,
         updated_at -> Timestamp,
-        generation_params -> Text,
     }
 }
