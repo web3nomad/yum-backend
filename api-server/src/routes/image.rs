@@ -49,11 +49,12 @@ impl IntoResponse for BadRequest {
 }
 
 const SYSTEM_PROMPT: &str = r#"
-你是一个 KFC 的美食专家，擅长编写 Stable Diffusion 的 prompt 来生成 KFC 的食物图片。
-我将提供一些灵感来源，口味，和食物的类型，你的任务是：
+你是一个 KFC 的美食专家, 擅长编写 Stable Diffusion 的 prompt 来生成 KFC 的食物图片.
+我将提供一些灵感来源, 口味, 和食物的类型, 你的任务是:
   - 生成一段可以生成创意 KFC 食物的 Stable Diffusion prompt
-  - 直接输出 prompt
-如下是一个优秀文案的示例：
+  - prompt 使用英文, 且不超过 500 个字符
+  - 直接输出 prompt, 而不包含任何说明和解释
+如下是一个优秀文案的示例:
 Food photography style.
 Chicken popcorn coated with a black Oreo-style crumb mixture.
 Appetizing, professional, culinary, high-resolution, commercial, highly detailed
@@ -109,46 +110,69 @@ async fn handle_generate_image_request(
     }
 }
 
-async fn callback_generate_image(task_payload: &TaskPayload, base64_images: &Vec<String>) {
-    let task_id: &str = &task_payload.task_id;
-    let images = base64_images
-        .iter()
-        .enumerate()
-        .map(|(i, base64_image)| {
-            let filename = format!("{}-{}.png", task_id, i);
-            ( filename, base64_image )
-        }).collect::<Vec<_>>();
-    let image_urls = crate::storage::azure::upload_images(&images).await;
-
-    let result = json!({
-        "images": image_urls.iter().map(|image_url| {
-            json!({
-                "src": image_url
-            })
-        }).collect::<Vec<_>>()
-    });
-
-    let conn = &mut establish_connection();
-    diesel::update(tasks::table)
-        .filter(tasks::task_id.eq(task_id))
-        .set(tasks::result.eq(serde_json::to_string(&result).unwrap()))
-        .execute(conn)
-        .expect("Error updating task");
-
+async fn callback_generate_image(task_payload: &TaskPayload, result: &serde_json::Value) {
     let callback_res = reqwest::Client::new()
         .post(&task_payload.callback_url)
         .json(&json!({
-            "taskId": task_id,
+            "taskId": task_payload.task_id,
             "params": task_payload.params,
             "result": result,
         }))
         .send().await;
     match callback_res {
-        Ok(_) => tracing::info!("Task {} callback success", task_id),
-        Err(e) => tracing::info!("Task {} callback failed: {}", task_id, e)
+        Ok(_) => tracing::info!("Task {} callback success", task_payload.task_id),
+        Err(e) => tracing::error!("Task {} callback failed: {}", task_payload.task_id, e)
     }
 }
 
+async fn process_task(task_payload: &TaskPayload) {
+    let conn = &mut establish_connection();
+    let task_id = &task_payload.task_id;
+    tracing::info!("Task {} started", task_id);
+    diesel::update(tasks::table)
+        .filter(tasks::task_id.eq(task_id))
+        .set(tasks::starts_at.eq(chrono::Utc::now().naive_utc()))
+        .execute(conn).unwrap();
+    let prompt = &task_payload.generation_params.prompt;
+
+    if let Ok(base64_images) = crate::aigc::comfy::request(prompt).await {
+        tracing::info!("Task {} comfy success", task_id);
+
+        let task_id: &str = &task_payload.task_id;
+        let images = base64_images
+            .iter()
+            .enumerate()
+            .map(|(i, base64_image)| {
+                let filename = format!("{}-{}.png", task_id, i);
+                ( filename, base64_image )
+            }).collect::<Vec<_>>();
+        let image_urls = crate::storage::azure::upload_images(&images).await;
+
+        let result = json!({
+            "images": image_urls.iter().map(|image_url| {
+                json!({
+                    "src": image_url
+                })
+            }).collect::<Vec<_>>()
+        });
+
+        let conn = &mut establish_connection();
+        diesel::update(tasks::table)
+            .filter(tasks::task_id.eq(task_id))
+            .set((
+                tasks::result.eq(serde_json::to_string(&result).unwrap()),
+                tasks::ends_at.eq(chrono::Utc::now().naive_utc())
+            ))
+            .execute(conn)
+            .expect("Error updating task");
+
+        callback_generate_image(&task_payload, &result).await;
+
+        tracing::info!("Task {} end", task_id);
+    } else {
+        tracing::info!("Task {} comfy failed", task_id);
+    }
+}
 
 pub fn get_routes() -> Router {
     let (tx, mut rx) = mpsc::channel::<TaskPayload>(2);
@@ -157,25 +181,7 @@ pub fn get_routes() -> Router {
 
     tokio::spawn(async move {
         while let Some(task_payload) = rx.recv().await {
-            let conn = &mut establish_connection();
-            let task_id = &task_payload.task_id;
-            tracing::info!("Task {} started", task_id);
-            diesel::update(tasks::table)
-                .filter(tasks::task_id.eq(task_id))
-                .set(tasks::starts_at.eq(chrono::Utc::now().naive_utc()))
-                .execute(conn).unwrap();
-            let prompt = &task_payload.generation_params.prompt;
-            if let Ok(base64_images) = crate::aigc::comfy::request(prompt).await {
-                tracing::info!("Task {} comfy success", task_id);
-                callback_generate_image(&task_payload, &base64_images).await;
-                diesel::update(tasks::table)
-                    .filter(tasks::task_id.eq(task_id))
-                    .set(tasks::ends_at.eq(chrono::Utc::now().naive_utc()))
-                    .execute(conn).unwrap();
-                tracing::info!("Task {} end", task_id);
-            } else {
-                tracing::info!("Task {} comfy failed", task_id);
-            }
+            process_task(&task_payload).await;
         }
     });
 
