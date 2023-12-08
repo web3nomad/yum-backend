@@ -13,5 +13,6 @@ diesel::table! {
         callback_url -> Varchar,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        generation_params -> Text,
     }
 }

@@ -11,6 +11,7 @@ pub struct Task {
     pub id: u32,
     pub task_id: String,
     pub params: String,
+    pub generation_params: String,
     pub result: String,
     pub starts_at: Option<chrono::NaiveDateTime>,
     pub ends_at: Option<chrono::NaiveDateTime>,
