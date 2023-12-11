@@ -1876,6 +1876,9 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "chrono",
+ "data-encoding",
+ "futures",
+ "reqwest",
  "serde_json",
  "tokio",
 ]
