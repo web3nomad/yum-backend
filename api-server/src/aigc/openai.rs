@@ -38,6 +38,7 @@ pub async fn request(system_prompt: &str, prompt: &str) -> Result<String, reqwes
         };
 
     let result_str = res.text().await.unwrap();
+    tracing::info!("openai res: {:?}", result_str);
     let json_data: serde_json::Value = serde_json::from_str(&result_str).unwrap();
     let message = json_data["choices"][0]["message"]["content"].as_str().unwrap().to_string();
     return Ok(message);

@@ -48,20 +48,45 @@ impl IntoResponse for BadRequest {
     }
 }
 
-const SYSTEM_PROMPT: &str = r#"
+const _SYSTEM_PROMPT: &str = r#"
 你是一个 KFC 的美食专家, 擅长编写 Stable Diffusion 的 prompt 来生成 KFC 的食物图片.
 我将提供一些灵感来源, 口味, 和食物的类型, 你的任务是:
-  - 生成一段可以生成创意 KFC 食物的 Stable Diffusion prompt
+1. 将用户输入的内容翻译成英文, 下一步使用翻译后的结果;
+2. 生成一段可以生成创意 KFC 食物的 Stable Diffusion prompt, 要求如下:
   - prompt 使用英文, 且不超过 500 个字符
-  - 直接输出 prompt, 而不包含任何说明和解释
+  - prompt 中控制食物在图片中间, 使用近景拍摄视角, 背景要抽象
+  - prompt 中必须保留用户输入的内容, 并加强权重, 用 (( 和 )) 包裹
+  - prompt 中不要出现 KFC 这个单词
+3. 最后直接输出第 2 步的 prompt, 不要包含第 1 步的结果，且不包含任何说明和解释.
+
+如下是一个输入示例:
+酥脆的,酸奶,汉堡
+其中灵感来源是"酥脆的", 口味是"酸奶", 食物类型是"汉堡"
+
 如下是一个优秀文案的示例:
-Food photography style.
-Chicken popcorn coated with a black Oreo-style crumb mixture.
-Appetizing, professional, culinary, high-resolution, commercial, highly detailed
+Food photography style. nuggets coated with a black Oreo-style crumb mixture. Appetizing, professional, culinary, high-resolution, commercial, highly detailed. In the style of rendered in cinema4d, rococo still-lifes.
+"#;
+
+const SYSTEM_PROMPT: &str = r#"
+XD Bot 是一位有艺术气质的 AI 助理，帮助人通过将自然语言转化为 prompt。你的工作是提供详细的、有创意的描述，以激发 AI 独特而有趣的图像。
+XD Bot 的行动规则如下：
+1. 第一部分：Food photography style, ((masterpiece)), ((best qualit)), 8k, high detailed, ultra-detailed, place the food in the middle of the picture, close-up shot
+2. 第二部分：简短地描述画面的主体，如：A girl sitting in a classroom，输出内容
+3. 第三部分：提供详细的、有创意的描述，以激发 AI 独特而有趣的图像。请记住，AI 能够理解多种语言并能解释抽象概念，因此请尽可能发挥想象力和描述性。您的描述越详细、越富有想象力，生成的图像就会越有趣。用单词或者词组描述画面的所有主体元素，元素之间用“,"隔开，如果有哪个元素比较重要，请给代表这个元素的英文词组增加小括号，最多可以增加三层小括号，如：(((crispy
+))), (((yogurt flavored))), (((humburger))) 输出内容；
+4. 第四部分：Appetizing, professional, culinary, high-resolution, commercial, highly detailed.
+In the style of rendered in cinema4d, rococo still-lifes.
+5. XD Bot 会将以上生成的四部分文本用逗号连接，中间不包含任何换行符的 prompt 作为最终结果；
+6. XD Bot 输出时将直接输出prompt，而不包含任何说明和解释。
 "#;
 
 async fn get_generation_params(params: &serde_json::Value) -> GenerationParams {
     let prompt = params["prompt"].as_str().unwrap();
+    let prompt = &format!(
+        // "{} in the style of rendered in cinema4d, rococo still-lifes",
+        // "{} ethereal fantasy concept art. magnificent, celestial, ethereal, painterly, epic, majestic, magical, fantasy art, cover art, dreamy.",
+        "{}",
+        prompt);
     let message = crate::aigc::openai::request(&SYSTEM_PROMPT, prompt).await.unwrap();
     GenerationParams {
         prompt: message,
@@ -117,6 +142,7 @@ async fn callback_generate_image(task_payload: &TaskPayload, result: &serde_json
             "taskId": task_payload.task_id,
             "params": task_payload.params,
             "result": result,
+            "generation_params": task_payload.generation_params,
         }))
         .send().await;
     match callback_res {
@@ -175,7 +201,10 @@ async fn process_task(task_payload: &TaskPayload) {
 }
 
 pub fn get_routes() -> Router {
-    let (tx, mut rx) = mpsc::channel::<TaskPayload>(2);
+    let (
+        tx,
+        mut rx
+    ) = mpsc::channel::<TaskPayload>(10);
 
     let tx = Arc::new(tx);
 
