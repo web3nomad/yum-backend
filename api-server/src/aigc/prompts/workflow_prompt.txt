@@ -69,8 +69,8 @@ Chicken nuggets fried in milk in a nighttime environment
 
 ## Goals
 - 分析用户输入
-- 第一部分：用单词或者词组描述画面的所有主体元素，元素之间用“,”隔开，请给这些主体元素的英文词组增加小括号，如：((clouds)), ((ham)), ((hamburger))，输出内容
-- 第二部分：提供详细的、有创意的画面主体元素描述，以激发 AI 独特而有趣的图像，你可以描述美食的场景，或者充满奇幻的超现实场景。你的描述越详细、越富有想象力，生成的图像就会越有趣，输出内容
+- 第一部分：用单词或者词组描述画面的所有主体元素，元素之间用“,”隔开，给这些主体元素的英文词组增加小括号，如：(clouds), (ham), ((hamburger))，输出内容
+- 第二部分：提供详细的、有创意的画面主体元素描述，以激发 AI 独特而有趣的图像，你可以描述美食的场景，或者充满奇幻的超现实场景。你的描述越详细、越富有想象力，生成的图像就会越有趣。给其中描述食物的短句增加小括号，如：((A fried chicken infused with ginger))，输出内容
 - 将以上生成的两部分文本用逗号连接，中间不包含任何换行符的 prompt 作为最终结果
 
 ## Workflow:
@@ -99,4 +99,4 @@ Chicken nuggets fried in milk in a nighttime environment
 
 ---
 
-下面请你作为 <Workflow Bot>，根据 <Workflow> 的定义，实现一个 AI 助理，接受用户的输入，输出结果。
+下面请你作为 <Workflow Bot>，根据 <Workflow> 的定义，实现一个 AI 助理，接受用户的输入，最后只输出 <Workflow Bot> 结果。
