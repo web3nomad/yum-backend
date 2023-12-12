@@ -22,7 +22,6 @@ fn establish_connection() -> MysqlConnection {
 struct TaskPayload {
     task_id: String,
     params: serde_json::Value,
-    generation_params: crate::aigc::text2prompt::GenerationParams,
     callback_url: String,
 }
 
@@ -52,12 +51,10 @@ async fn handle_generate_image_request(
     let body_json = serde_json::from_str::<serde_json::Value>(&body).unwrap();
     let params = body_json["params"].to_owned();
     let callback_url = body_json["resultCallbackUrl"].as_str().unwrap().to_string();
-    let generation_params = crate::aigc::text2prompt::request(&params).await;
 
     let task_payload = TaskPayload {
         task_id: task_id.clone(),
         params,
-        generation_params,
         callback_url,
     };
 
@@ -65,7 +62,7 @@ async fn handle_generate_image_request(
     let new_task = NewTask {
         task_id: &task_id,
         params: &serde_json::to_string(&task_payload.params).unwrap(),
-        generation_params: &serde_json::to_string(&task_payload.generation_params).unwrap(),
+        generation_params: "",
         result: "",
         callback_url: &task_payload.callback_url,
     };
@@ -84,14 +81,18 @@ async fn handle_generate_image_request(
     }
 }
 
-async fn callback_generate_image(task_payload: &TaskPayload, result: &serde_json::Value) {
+async fn callback_generate_image(
+    task_payload: &TaskPayload,
+    generation_params: &crate::aigc::text2prompt::GenerationParams,
+    result: &serde_json::Value
+) {
     let callback_res = reqwest::Client::new()
         .post(&task_payload.callback_url)
         .json(&json!({
             "taskId": task_payload.task_id,
             "params": task_payload.params,
             "result": result,
-            "generation_params": task_payload.generation_params,
+            "generation_params": generation_params,
         }))
         .send().await;
     match callback_res {
@@ -103,12 +104,17 @@ async fn callback_generate_image(task_payload: &TaskPayload, result: &serde_json
 async fn process_task(task_payload: &TaskPayload) {
     let conn = &mut establish_connection();
     let task_id = &task_payload.task_id;
+
     tracing::info!("Task {} started", task_id);
     diesel::update(tasks::table)
         .filter(tasks::task_id.eq(task_id))
         .set(tasks::starts_at.eq(chrono::Utc::now().naive_utc()))
         .execute(conn).unwrap();
-    let prompt = &task_payload.generation_params.prompt;
+
+    let generation_params = crate::aigc::text2prompt::request(&task_payload.params).await;
+    tracing::info!("Task {} text2prompt success", task_id);
+
+    let prompt = &generation_params.prompt;
 
     if let Ok(base64_images) = crate::aigc::comfy::request(prompt).await {
         tracing::info!("Task {} comfy success", task_id);
@@ -135,13 +141,14 @@ async fn process_task(task_payload: &TaskPayload) {
         diesel::update(tasks::table)
             .filter(tasks::task_id.eq(task_id))
             .set((
+                tasks::generation_params.eq(serde_json::to_string(&generation_params).unwrap()),
                 tasks::result.eq(serde_json::to_string(&result).unwrap()),
                 tasks::ends_at.eq(chrono::Utc::now().naive_utc())
             ))
             .execute(conn)
             .expect("Error updating task");
 
-        callback_generate_image(&task_payload, &result).await;
+        callback_generate_image(&task_payload, &generation_params, &result).await;
 
         tracing::info!("Task {} end", task_id);
     } else {
