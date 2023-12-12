@@ -9,7 +9,7 @@
             "negative_ascore": 2,
             "vae_name": "Baked VAE",
             "positive": "a cyberpunk pig",
-            "negative": "chicken, logo, human, drawing, painting, vector, graphics, longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, poorly drawn, ugly, deformities, extra limbs, nsfw",
+            "negative": "unappetizing, chicken, logo, human, cropped, worst quality, low quality, poorly drawn, ugly, deformities, extra limbs, nsfw",
             "token_normalization": "none",
             "weight_interpretation": "comfy",
             "empty_latent_width": 1024,
