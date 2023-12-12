@@ -29,7 +29,6 @@ async fn main() {
     // build our application with a single route
     let app = Router::new()
         .route("/", get(|| async { "Hello, KFC!" }))
-        .merge(crate::routes::test_routes::get_test_routes())
         .merge(crate::routes::text::get_routes())
         .merge(crate::routes::image::get_routes());
 
