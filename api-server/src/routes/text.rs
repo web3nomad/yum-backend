@@ -22,7 +22,7 @@ async fn handler(body: String) -> Result<Json<serde_json::Value>, impl IntoRespo
     let json_body: serde_json::Value = serde_json::from_str(&body).unwrap();
     let params = &json_body["params"];
     let prompt = json_body["params"]["prompt"].as_str().unwrap();
-    let message = match crate::aigc::openai::request(&SYSTEM_PROMPT, prompt).await {
+    let message = match crate::aigc::openai::request(&SYSTEM_PROMPT, prompt, 1.0).await {
         Ok(v) => v,
         Err(e) => {
             tracing::error!("Error: {:?}", e);

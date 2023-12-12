@@ -2,7 +2,11 @@ use serde_json::json;
 use std::env;
 use reqwest;
 
-pub async fn request(system_prompt: &str, prompt: &str) -> Result<String, reqwest::Error> {
+pub async fn request(
+    system_prompt: &str,
+    prompt: &str,
+    temprature: f32,
+) -> Result<String, reqwest::Error> {
     let openai_token = env::var("OPENAI_TOKEN").unwrap();
     let model_name = "gpt-4";
     let version = "2023-12-01-preview";
@@ -22,7 +26,7 @@ pub async fn request(system_prompt: &str, prompt: &str) -> Result<String, reqwes
     let payload = json!({
         "messages": messages,
         "max_tokens": 800,
-        "temperature": 1,
+        "temperature": temprature,
         "frequency_penalty": 0,
         "presence_penalty": 0,
         "top_p": 0.95,
