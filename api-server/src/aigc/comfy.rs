@@ -9,7 +9,6 @@ pub enum ComfyError {
 
 async fn fetch_images(images_urls: Vec<String>) -> Vec<String> {
     async fn fetch(image_url: &str) -> String {
-        // fetch image file from image_url and convert to base64
         let response = reqwest::get(image_url).await.unwrap();
         let image_bytes = response.bytes().await.unwrap();
         // println!("image_url: {:?}", image_url);
@@ -65,9 +64,7 @@ pub async fn request(prompt: &str) -> Result<Vec<String>, ComfyError> {
         let res_body_text = res.text().await.unwrap();
         let res_body_json: serde_json::Value = serde_json::from_str(&res_body_text).unwrap();
         if let Some(result) = res_body_json.get(prompt_id) {
-            // println!("result: {:?}", result["outputs"]["27"]["images"]);
-            // let images_urls = result["outputs"]["27"]["images"]
-            let images_urls = result["outputs"]["41"]["images"]
+            let images_urls = result["outputs"]["final"]["images"]
                 .as_array()
                 .unwrap()
                 .iter()
@@ -84,85 +81,7 @@ pub async fn request(prompt: &str) -> Result<Vec<String>, ComfyError> {
 }
 
 #[allow(dead_code)]
-const COMFY_API_TPL_SDXL_TURBO: &'static str = r#"
-{"5":{"inputs":{"width":512,"height":512,"batch_size":4},"class_type":"EmptyLatentImage"},"6":{"inputs":{"text":"An innovative and visually appealing dish of chicken popcorn coated with a black Oreo-style crumb mixture. The chicken pieces are crispy and golden on the inside, with a unique black coating on the outside that resembles crushed Oreo cookies. This creates a striking contrast in colors and an intriguing blend of flavors. The chicken popcorn is arranged attractively in a bowl, inviting viewers to experience this unusual and delicious fusion of sweet and savory.","clip":["20",1]},"class_type":"CLIPTextEncode"},"7":{"inputs":{"text":"text, watermark","clip":["20",1]},"class_type":"CLIPTextEncode"},"8":{"inputs":{"samples":["13",0],"vae":["20",2]},"class_type":"VAEDecode"},"13":{"inputs":{"add_noise":true,"noise_seed":0,"cfg":1,"model":["20",0],"positive":["6",0],"negative":["7",0],"sampler":["14",0],"sigmas":["22",0],"latent_image":["5",0]},"class_type":"SamplerCustom"},"14":{"inputs":{"sampler_name":"euler_ancestral"},"class_type":"KSamplerSelect"},"20":{"inputs":{"ckpt_name":"sd_xl_turbo_1.0_fp16.safetensors"},"class_type":"CheckpointLoaderSimple"},"22":{"inputs":{"steps":1,"model":["20",0]},"class_type":"SDTurboScheduler"},"25":{"inputs":{"images":["8",0]},"class_type":"PreviewImage"},"27":{"inputs":{"filename_prefix":"ComfyUI","images":["8",0]},"class_type":"SaveImage"}}
-"#;
+const COMFY_API_TPL_SDXL_TURBO: &'static str = include_str!("./workflows/sdxl_turbo.json");
 
 #[allow(dead_code)]
-const COMFY_API_TPL_SDXL: &'static str = r#"
-{
-  "22": {
-    "inputs": {
-      "base_ckpt_name": "sd_xl_base_1.0_0.9vae.safetensors",
-      "base_clip_skip": -2,
-      "refiner_ckpt_name": "sd_xl_refiner_1.0_0.9vae.safetensors",
-      "refiner_clip_skip": -2,
-      "positive_ascore": 6,
-      "negative_ascore": 2,
-      "vae_name": "Baked VAE",
-      "positive": "a cyberpunk pig",
-      "negative": "chicken, logo, human, drawing, painting, vector, graphics, longbody, lowres, bad anatomy, bad hands, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, poorly drawn, ugly, deformities, extra limbs, nsfw",
-      "token_normalization": "none",
-      "weight_interpretation": "comfy",
-      "empty_latent_width": 1024,
-      "empty_latent_height": 1024,
-      "batch_size": 4
-    },
-    "class_type": "Eff. Loader SDXL"
-  },
-  "36": {
-    "inputs": {
-      "images": [
-        "40",
-        0
-      ]
-    },
-    "class_type": "PreviewImage"
-  },
-  "39": {
-    "inputs": {
-      "noise_seed": 0,
-      "steps": 20,
-      "cfg": 7,
-      "sampler_name": "dpmpp_2m_sde_gpu",
-      "scheduler": "karras",
-      "start_at_step": 0,
-      "refine_at_step": -1,
-      "preview_method": "auto",
-      "vae_decode": "true",
-      "sdxl_tuple": [
-        "22",
-        0
-      ],
-      "latent_image": [
-        "22",
-        1
-      ]
-    },
-    "class_type": "KSampler SDXL (Eff.)"
-  },
-  "40": {
-    "inputs": {
-      "samples": [
-        "39",
-        1
-      ],
-      "vae": [
-        "22",
-        2
-      ]
-    },
-    "class_type": "VAEDecode"
-  },
-  "41": {
-    "inputs": {
-      "filename_prefix": "ComfyUI",
-      "images": [
-        "40",
-        0
-      ]
-    },
-    "class_type": "SaveImage"
-  }
-}
-"#;
+const COMFY_API_TPL_SDXL: &'static str = include_str!("./workflows/sdxl_base.json");
