@@ -5,7 +5,7 @@ use reqwest;
 pub async fn request(system_prompt: &str, prompt: &str) -> Result<String, reqwest::Error> {
     let openai_token = env::var("OPENAI_TOKEN").unwrap();
     let model_name = "gpt-4";
-    let version = "2023-07-01-preview";
+    let version = "2023-12-01-preview";
     let endpoint = "museai1";
 
     let messages = json!([{
@@ -21,7 +21,12 @@ pub async fn request(system_prompt: &str, prompt: &str) -> Result<String, reqwes
         endpoint, model_name, version);
     let payload = json!({
         "messages": messages,
+        "max_tokens": 800,
         "temperature": 1,
+        "frequency_penalty": 0,
+        "presence_penalty": 0,
+        "top_p": 0.95,
+        "stop": null
     });
     let res = match reqwest::Client::new()
         .post(url)
@@ -38,7 +43,7 @@ pub async fn request(system_prompt: &str, prompt: &str) -> Result<String, reqwes
         };
 
     let result_str = res.text().await.unwrap();
-    tracing::info!("openai res: {:?}", result_str);
+    tracing::debug!("openai res: {:?}", result_str);
     let json_data: serde_json::Value = serde_json::from_str(&result_str).unwrap();
     let message = json_data["choices"][0]["message"]["content"].as_str().unwrap().to_string();
     return Ok(message);
