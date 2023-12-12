@@ -111,7 +111,14 @@ async fn process_task(task_payload: &TaskPayload) {
         .set(tasks::starts_at.eq(chrono::Utc::now().naive_utc()))
         .execute(conn).unwrap();
 
-    let generation_params = crate::aigc::text2prompt::request(&task_payload.params).await;
+    let generation_params = match crate::aigc::text2prompt::request(&task_payload.params).await {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::error!("Task {} Error: {:?}", task_id, e);
+            return;
+        }
+    };
+
     tracing::info!("Task {} text2prompt success", task_id);
 
     let prompt = &generation_params.prompt;

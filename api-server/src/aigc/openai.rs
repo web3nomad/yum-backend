@@ -2,11 +2,17 @@ use serde_json::json;
 use std::env;
 use reqwest;
 
+#[derive(Debug)]
+pub enum OpenAIError {
+    ReqwestError(reqwest::Error),
+    Error(String),
+}
+
 pub async fn request(
     system_prompt: &str,
     prompt: &str,
     temprature: f32,
-) -> Result<String, reqwest::Error> {
+) -> Result<String, OpenAIError> {
     let openai_token = env::var("OPENAI_TOKEN").unwrap();
     let model_name = "gpt-4";
     let version = "2023-12-01-preview";
@@ -42,13 +48,17 @@ pub async fn request(
             Ok(v) => v,
             Err(e) => {
                 tracing::error!("Error: {:?}", e);
-                return Err(e);
+                return Err(OpenAIError::ReqwestError(e));
             }
         };
 
     let result_str = res.text().await.unwrap();
-    tracing::debug!("openai res: {:?}", result_str);
     let json_data: serde_json::Value = serde_json::from_str(&result_str).unwrap();
-    let message = json_data["choices"][0]["message"]["content"].as_str().unwrap().to_string();
-    return Ok(message);
+
+    match json_data["choices"][0]["message"]["content"].as_str() {
+        Some(v) => Ok(v.to_string()),
+        None => {
+            return Err(OpenAIError::Error(result_str));
+        }
+    }
 }
