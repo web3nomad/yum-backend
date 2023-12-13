@@ -28,6 +28,7 @@ pub async fn request(prompt: &str) -> Result<Vec<String>, ComfyError> {
     // params["6"]["inputs"]["text"] = json!(prompt);
     let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL).unwrap();
     params["22"]["inputs"]["positive"] = json!(prompt);
+    params["39"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
     let payload = json!({
         "prompt": params,
     });
