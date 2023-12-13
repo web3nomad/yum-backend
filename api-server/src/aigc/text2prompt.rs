@@ -24,21 +24,22 @@ pub async fn request(params: &serde_json::Value) -> Result<GenerationParams, sup
     let message_json: serde_json::Value = serde_json::from_str(&message_str).unwrap();
     let generation_prompt = message_json["Art Bot"].as_str().unwrap();
 
-    let prefix = "Food photography style, appetizing, scrumptious, professional, culinary, high-resolution, commercial";
-    let suffix1 = get_magic_suffix();
-    let suffix2 = "((solo)), food in the middle of the picture, close-up shot";
+    // let magic = get_magic_prompt();
+    let prefix = "Food photography style";
+    let suffix = "appetizing, scrumptious, professional, culinary, high-resolution, commercial, ((solo)), food in the middle of the picture, close-up shot";
     let generation_prompt = format!(
-        "{}, {}, {}, {}", prefix, generation_prompt, suffix1, suffix2
+        "{}, {}, {}", prefix, generation_prompt, suffix
     );
 
     let generation_params = GenerationParams {
         prompt: generation_prompt,
-        negative_prompt: String::from("animal, eye, logo, human, cropped, worst quality, low quality, poorly drawn, ugly, deformities, extra limbs, nsfw"),
+        negative_prompt: String::from("animal, chicken, frog, lobster, logo, unappetizing, sloppy, unprofessional, noisy, blurry, nsfw"),
     };
     Ok(generation_params)
 }
 
-fn get_magic_suffix() -> &'static str {
+#[allow(dead_code)]
+fn get_magic_prompt() -> &'static str {
     let magics: Vec<&str> = vec![
         "magic circles",
         "fluorescent mushroom forest",
