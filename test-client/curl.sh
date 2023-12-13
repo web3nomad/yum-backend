@@ -1,12 +1,15 @@
 # for prompt in a list of string
 
 prompts=(
+    "酥软的,龙虾,薯条"
     "柔嫩的,布丁,鸡米花"
     "鲜花,芒果,蛋挞"
     "酥软的,牛蛙,薯条"
     "烟雾,葱花,汉堡"
+    "酥软的,龙虾,汉堡"
     "天空,泡菜,鸡米花"
     "极品的,巧克力,薯条"
+    "麻辣的,牛蛙,汉堡"
     "滑嫩的,苹果,薯条"
     "宇宙,芝麻,薯条"
     "水光,椰子,鸡米花"
@@ -117,5 +120,5 @@ do
         "resultCallbackUrl": "http://localhost:3001/callback"
     }'
     echo "\n"
-    sleep 15
+    sleep 40
 done
