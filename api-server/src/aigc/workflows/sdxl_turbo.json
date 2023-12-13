@@ -9,14 +9,14 @@
     },
     "6": {
         "inputs": {
-            "text": "An innovative and visually appealing dish of chicken popcorn coated with a black Oreo-style crumb mixture. The chicken pieces are crispy and golden on the inside, with a unique black coating on the outside that resembles crushed Oreo cookies. This creates a striking contrast in colors and an intriguing blend of flavors. The chicken popcorn is arranged attractively in a bowl, inviting viewers to experience this unusual and delicious fusion of sweet and savory.",
+            "text": "",
             "clip": ["20", 1]
         },
         "class_type": "CLIPTextEncode"
     },
     "7": {
         "inputs": {
-            "text": "text, watermark",
+            "text": "animal, eye, logo, human, cropped, worst quality, low quality, poorly drawn, ugly, deformities, extra limbs, nsfw",
             "clip": ["20", 1]
         },
         "class_type": "CLIPTextEncode"
@@ -63,9 +63,9 @@
     },
     "final": {
         "inputs": {
-            "filename_prefix": "ComfyUI",
+            "extension": "jpeg",
             "images": ["8", 0]
         },
-        "class_type": "SaveImage"
+        "class_type": "Base64ImageOutput"
     }
 }

@@ -27,9 +27,14 @@ pub async fn request(prompt: &str) -> Result<Vec<String>, ComfyError> {
     let comfy_origin = env::var("COMFYUI_TEST_ORIGIN").unwrap();
     // let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_TURBO).unwrap();
     // params["6"]["inputs"]["text"] = json!(prompt);
-    let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_BASE64).unwrap();
+    // params["13"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
+    let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_LCM).unwrap();
     params["22"]["inputs"]["positive"] = json!(prompt);
-    params["39"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
+    params["31"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
+    params["33"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
+    // let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_BASE64).unwrap();
+    // params["22"]["inputs"]["positive"] = json!(prompt);
+    // params["39"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
     let payload = json!({
         "prompt": params,
     });
@@ -87,5 +92,5 @@ pub async fn request(prompt: &str) -> Result<Vec<String>, ComfyError> {
 }
 
 // const COMFY_API_TPL_SDXL_TURBO: &'static str = include_str!("./workflows/sdxl_turbo.json");
-// const COMFY_API_TPL_SDXL: &'static str = include_str!("./workflows/sdxl_base.json");
-const COMFY_API_TPL_SDXL_BASE64: &'static str = include_str!("./workflows/sdxl_base_base64.json");
+const COMFY_API_TPL_SDXL_LCM: &'static str = include_str!("./workflows/sdxl_lcm_lora.json");
+// const COMFY_API_TPL_SDXL_BASE64: &'static str = include_str!("./workflows/sdxl_base_base64.json");

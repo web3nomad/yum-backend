@@ -1,0 +1,95 @@
+{
+    "22": {
+        "inputs": {
+            "base_ckpt_name": "sd_xl_base_1.0_0.9vae.safetensors",
+            "base_clip_skip": -2,
+            "refiner_ckpt_name": "sd_xl_refiner_1.0_0.9vae.safetensors",
+            "refiner_clip_skip": -2,
+            "positive_ascore": 6,
+            "negative_ascore": 2,
+            "vae_name": "Baked VAE",
+            "positive": "",
+            "negative": "animal, eye, logo, human, cropped, worst quality, low quality, poorly drawn, ugly, deformities, extra limbs, nsfw",
+            "token_normalization": "none",
+            "weight_interpretation": "comfy",
+            "empty_latent_width": 1024,
+            "empty_latent_height": 1024,
+            "batch_size": 4
+        },
+        "class_type": "Eff. Loader SDXL"
+    },
+    "23": {
+        "inputs": {
+            "sdxl_tuple": ["22", 0]
+        },
+        "class_type": "Unpack SDXL Tuple"
+    },
+    "25": {
+        "inputs": {
+            "lora_name": "lcm-lora-sdxl.safetensors",
+            "strength_model": 1,
+            "strength_clip": 1,
+            "model": ["23", 0],
+            "clip": ["23", 1]
+        },
+        "class_type": "LoraLoader"
+    },
+    "26": {
+        "inputs": {
+            "sampling": "eps",
+            "zsnr": false,
+            "model": ["25", 0]
+        },
+        "class_type": "ModelSamplingDiscrete"
+    },
+    "31": {
+        "inputs": {
+            "add_noise": "enable",
+            "noise_seed": 0,
+            "steps": 4,
+            "cfg": 1,
+            "sampler_name": "lcm",
+            "scheduler": "sgm_uniform",
+            "start_at_step": 0,
+            "end_at_step": 10000,
+            "return_with_leftover_noise": "enable",
+            "model": ["26", 0],
+            "positive": ["23", 2],
+            "negative": ["23", 3],
+            "latent_image": ["22", 1]
+        },
+        "class_type": "KSamplerAdvanced"
+    },
+    "33": {
+        "inputs": {
+            "add_noise": "disable",
+            "noise_seed": 0,
+            "steps": 30,
+            "cfg": 7.5,
+            "sampler_name": "dpmpp_2m_sde_gpu",
+            "scheduler": "karras",
+            "start_at_step": 24,
+            "end_at_step": 10000,
+            "return_with_leftover_noise": "disable",
+            "model": ["23", 4],
+            "positive": ["23", 6],
+            "negative": ["23", 7],
+            "latent_image": ["31", 0]
+        },
+        "class_type": "KSamplerAdvanced"
+    },
+    "34": {
+        "inputs": {
+            "samples": ["33", 0],
+            "vae": ["22", 2]
+        },
+        "class_type": "VAEDecode"
+    },
+    "final": {
+        "inputs": {
+            "extension": "jpeg",
+            "images": ["34", 0]
+        },
+        "class_type": "Base64ImageOutput"
+    }
+}
