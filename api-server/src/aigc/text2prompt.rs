@@ -33,7 +33,7 @@ pub async fn request(params: &serde_json::Value) -> Result<GenerationParams, sup
 
     let generation_params = GenerationParams {
         prompt: generation_prompt,
-        negative_prompt: String::from(""),
+        negative_prompt: String::from("animal, eye, logo, human, cropped, worst quality, low quality, poorly drawn, ugly, deformities, extra limbs, nsfw"),
     };
     Ok(generation_params)
 }

@@ -121,9 +121,7 @@ async fn process_task(task_payload: &TaskPayload) {
 
     tracing::info!("Task {} text2prompt success", task_id);
 
-    let prompt = &generation_params.prompt;
-
-    if let Ok(base64_images) = crate::aigc::comfy::request(prompt).await {
+    if let Ok(base64_images) = crate::aigc::comfy::request(&generation_params).await {
         tracing::info!("Task {} comfy success", task_id);
 
         let task_id: &str = &task_payload.task_id;
@@ -168,7 +166,7 @@ pub fn get_routes() -> Router {
     let (
         tx,
         mut rx
-    ) = mpsc::channel::<TaskPayload>(10);
+    ) = mpsc::channel::<TaskPayload>(100);
 
     let tx = Arc::new(tx);
 

@@ -9,7 +9,7 @@
             "negative_ascore": 2,
             "vae_name": "Baked VAE",
             "positive": "",
-            "negative": "animal, eye, logo, human, cropped, worst quality, low quality, poorly drawn, ugly, deformities, extra limbs, nsfw",
+            "negative": "",
             "token_normalization": "none",
             "weight_interpretation": "comfy",
             "empty_latent_width": 1024,

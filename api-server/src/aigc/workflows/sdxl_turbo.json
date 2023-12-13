@@ -16,7 +16,7 @@
     },
     "7": {
         "inputs": {
-            "text": "animal, eye, logo, human, cropped, worst quality, low quality, poorly drawn, ugly, deformities, extra limbs, nsfw",
+            "text": "",
             "clip": ["20", 1]
         },
         "class_type": "CLIPTextEncode"

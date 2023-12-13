@@ -1,6 +1,7 @@
 use serde_json::json;
 use futures::future::join_all;
 use std::env;
+use crate::aigc::text2prompt::GenerationParams;
 
 pub enum ComfyError {
     ReqwestError(reqwest::Error),
@@ -8,36 +9,13 @@ pub enum ComfyError {
 }
 
 #[allow(dead_code)]
-async fn fetch_images(images_urls: Vec<String>) -> Vec<String> {
-    async fn fetch(image_url: &str) -> String {
-        let response = reqwest::get(image_url).await.unwrap();
-        let image_bytes = response.bytes().await.unwrap();
-        // println!("image_url: {:?}", image_url);
-        return data_encoding::BASE64.encode(&image_bytes);
-    }
-    let base64_images = images_urls
-        .iter()
-        .map(|url| fetch(url))
-        .collect::<Vec<_>>();
-    return join_all(base64_images).await;
-}
-
-#[allow(dead_code)]
-pub async fn request(prompt: &str) -> Result<Vec<String>, ComfyError> {
+pub async fn request(generation_params: &GenerationParams) -> Result<Vec<String>, ComfyError> {
     let comfy_origin = env::var("COMFYUI_TEST_ORIGIN").unwrap();
-    // let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_TURBO).unwrap();
-    // params["6"]["inputs"]["text"] = json!(prompt);
-    // params["13"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
-    let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_LCM).unwrap();
-    params["22"]["inputs"]["positive"] = json!(prompt);
-    params["31"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
-    params["33"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
-    // let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_BASE64).unwrap();
-    // params["22"]["inputs"]["positive"] = json!(prompt);
-    // params["39"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
+    let params = get_sdxl_base_params(generation_params);
     let payload = json!({
         "prompt": params,
     });
+    // println!("payload: {:?}", &payload);
     let client = reqwest::Client::new();
     let url = format!("{}/prompt", comfy_origin);
     let res = match client.post(url).json(&payload).send().await {
@@ -72,14 +50,10 @@ pub async fn request(prompt: &str) -> Result<Vec<String>, ComfyError> {
         let res_body_json: serde_json::Value = serde_json::from_str(&res_body_text).unwrap();
         if let Some(result) = res_body_json.get(prompt_id) {
             // let images_urls = result["outputs"]["final"]["images"]
-            //     .as_array()
-            //     .unwrap()
-            //     .iter()
-            //     .map(|v| {
+            //     .as_array().unwrap().iter().map(|v| {
             //         let filename = v["filename"].as_str().unwrap();
             //         format!("{}/view?filename={}&subfolder=&type=output", comfy_origin, filename)
-            //     })
-            //     .collect();
+            //     }).collect();
             // base64_images = fetch_images(images_urls).await;
             base64_images = result["outputs"]["final"]["images"]
                 .as_array().unwrap().iter()
@@ -91,6 +65,48 @@ pub async fn request(prompt: &str) -> Result<Vec<String>, ComfyError> {
     return Ok(base64_images);
 }
 
-// const COMFY_API_TPL_SDXL_TURBO: &'static str = include_str!("./workflows/sdxl_turbo.json");
+#[allow(dead_code)]
+async fn fetch_images(images_urls: Vec<String>) -> Vec<String> {
+    async fn fetch(image_url: &str) -> String {
+        let response = reqwest::get(image_url).await.unwrap();
+        let image_bytes = response.bytes().await.unwrap();
+        // println!("image_url: {:?}", image_url);
+        return data_encoding::BASE64.encode(&image_bytes);
+    }
+    let base64_images = images_urls
+        .iter()
+        .map(|url| fetch(url))
+        .collect::<Vec<_>>();
+    return join_all(base64_images).await;
+}
+
+const COMFY_API_TPL_SDXL_TURBO: &'static str = include_str!("./workflows/sdxl_turbo.json");
+#[allow(dead_code)]
+fn get_sdxl_turbo_params(generation_params: &GenerationParams) -> serde_json::Value {
+    let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_TURBO).unwrap();
+    params["6"]["inputs"]["text"] = json!(generation_params.prompt);
+    params["7"]["inputs"]["text"] = json!(generation_params.negative_prompt);
+    params["13"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
+    return params;
+}
+
 const COMFY_API_TPL_SDXL_LCM: &'static str = include_str!("./workflows/sdxl_lcm_lora.json");
-// const COMFY_API_TPL_SDXL_BASE64: &'static str = include_str!("./workflows/sdxl_base_base64.json");
+#[allow(dead_code)]
+fn get_sdxl_lcm_params(generation_params: &GenerationParams) -> serde_json::Value {
+    let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_LCM).unwrap();
+    params["22"]["inputs"]["positive"] = json!(generation_params.prompt);
+    params["22"]["inputs"]["negative"] = json!(generation_params.negative_prompt);
+    params["31"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
+    params["33"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
+    return params;
+}
+
+const COMFY_API_TPL_SDXL_BASE64: &'static str = include_str!("./workflows/sdxl_base_base64.json");
+#[allow(dead_code)]
+fn get_sdxl_base_params(generation_params: &GenerationParams) -> serde_json::Value {
+    let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_BASE64).unwrap();
+    params["22"]["inputs"]["positive"] = json!(generation_params.prompt);
+    params["22"]["inputs"]["negative"] = json!(generation_params.negative_prompt);
+    params["39"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
+    return params;
+}
