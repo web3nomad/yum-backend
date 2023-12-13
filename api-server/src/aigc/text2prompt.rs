@@ -14,7 +14,9 @@ const SYSTEM_PROMPT: &str = include_str!("./prompts/workflow_prompt.txt");
 
 pub async fn request(params: &serde_json::Value) -> Result<GenerationParams, super::openai::OpenAIError> {
     let user_input = params["prompt"].as_str().unwrap();
-    let message_str = match super::openai::request(&SYSTEM_PROMPT, user_input, 0.0).await {
+    let message_str = match super::openai::request(
+        &SYSTEM_PROMPT, user_input, 0.0, true
+    ).await {
         Ok(v) => v,
         Err(e) => {
             return Err(e);

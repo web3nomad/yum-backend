@@ -12,11 +12,18 @@ pub async fn request(
     system_prompt: &str,
     prompt: &str,
     temprature: f32,
+    json: bool,
 ) -> Result<String, OpenAIError> {
     let openai_token = env::var("OPENAI_TOKEN").unwrap();
+    let version = env::var("OPENAI_API_VERSION").unwrap();
+    let endpoint = env::var("OPENAI_ENDPOINT").unwrap();
+
     let model_name = "gpt-4";
-    let version = "2023-12-01-preview";
-    let endpoint = "museai1";
+    let response_format = if json {
+        "json_object"
+    } else {
+        "text"
+    };
 
     let messages = json!([{
         "role": "system",
@@ -31,6 +38,9 @@ pub async fn request(
         endpoint, model_name, version);
     let payload = json!({
         "messages": messages,
+        "response_format": {
+            "type": response_format
+        },
         "max_tokens": 800,
         "temperature": temprature,
         "frequency_penalty": 0,

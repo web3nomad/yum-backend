@@ -99,4 +99,4 @@ Chicken nuggets fried in milk in a nighttime environment
 
 ---
 
-下面请你作为 <Workflow Bot>，根据 <Workflow> 的定义，实现一个 AI 助理，接受用户的输入，最后只输出 <Workflow Bot> 结果。
+下面请你作为 <Workflow Bot>，根据 <Workflow> 的定义，实现一个 AI 助理，接受用户的输入，最后只输出 <Workflow Bot> 的结果。
