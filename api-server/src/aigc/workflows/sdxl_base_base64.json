@@ -1,0 +1,50 @@
+{
+    "22": {
+        "inputs": {
+            "base_ckpt_name": "sd_xl_base_1.0_0.9vae.safetensors",
+            "base_clip_skip": -2,
+            "refiner_ckpt_name": "sd_xl_refiner_1.0_0.9vae.safetensors",
+            "refiner_clip_skip": -2,
+            "positive_ascore": 6,
+            "negative_ascore": 2,
+            "vae_name": "Baked VAE",
+            "positive": "a cyberpunk pig",
+            "negative": "unappetizing, chicken, logo, human, cropped, worst quality, low quality, poorly drawn, ugly, deformities, extra limbs, nsfw",
+            "token_normalization": "none",
+            "weight_interpretation": "comfy",
+            "empty_latent_width": 1024,
+            "empty_latent_height": 1024,
+            "batch_size": 4
+        },
+        "class_type": "Eff. Loader SDXL"
+    },
+    "39": {
+        "inputs": {
+            "noise_seed": 0,
+            "steps": 20,
+            "cfg": 7,
+            "sampler_name": "dpmpp_2m_sde_gpu",
+            "scheduler": "karras",
+            "start_at_step": 0,
+            "refine_at_step": -1,
+            "preview_method": "auto",
+            "vae_decode": "false",
+            "sdxl_tuple": ["22", 0],
+            "latent_image": ["22", 1]
+        },
+        "class_type": "KSampler SDXL (Eff.)"
+    },
+    "40": {
+        "inputs": {
+            "samples": ["39", 1],
+            "vae": ["22", 2]
+        },
+        "class_type": "VAEDecode"
+    },
+    "final": {
+        "inputs": {
+            "images": ["40", 0]
+        },
+        "class_type": "Base64ImageOutput"
+    }
+}

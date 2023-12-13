@@ -7,6 +7,7 @@ pub enum ComfyError {
     SerdeJsonError(serde_json::Error),
 }
 
+#[allow(dead_code)]
 async fn fetch_images(images_urls: Vec<String>) -> Vec<String> {
     async fn fetch(image_url: &str) -> String {
         let response = reqwest::get(image_url).await.unwrap();
@@ -26,7 +27,7 @@ pub async fn request(prompt: &str) -> Result<Vec<String>, ComfyError> {
     let comfy_origin = env::var("COMFYUI_TEST_ORIGIN").unwrap();
     // let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_TURBO).unwrap();
     // params["6"]["inputs"]["text"] = json!(prompt);
-    let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL).unwrap();
+    let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_BASE64).unwrap();
     params["22"]["inputs"]["positive"] = json!(prompt);
     params["39"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
     let payload = json!({
@@ -65,24 +66,26 @@ pub async fn request(prompt: &str) -> Result<Vec<String>, ComfyError> {
         let res_body_text = res.text().await.unwrap();
         let res_body_json: serde_json::Value = serde_json::from_str(&res_body_text).unwrap();
         if let Some(result) = res_body_json.get(prompt_id) {
-            let images_urls = result["outputs"]["final"]["images"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|v| {
-                    let filename = v["filename"].as_str().unwrap();
-                    format!("{}/view?filename={}&subfolder=&type=output", comfy_origin, filename)
-                })
+            // let images_urls = result["outputs"]["final"]["images"]
+            //     .as_array()
+            //     .unwrap()
+            //     .iter()
+            //     .map(|v| {
+            //         let filename = v["filename"].as_str().unwrap();
+            //         format!("{}/view?filename={}&subfolder=&type=output", comfy_origin, filename)
+            //     })
+            //     .collect();
+            // base64_images = fetch_images(images_urls).await;
+            base64_images = result["outputs"]["final"]["images"]
+                .as_array().unwrap().iter()
+                .map(|base64_str| base64_str.as_str().unwrap().to_owned())
                 .collect();
-            base64_images = fetch_images(images_urls).await;
             break;
         }
     }
     return Ok(base64_images);
 }
 
-#[allow(dead_code)]
-const COMFY_API_TPL_SDXL_TURBO: &'static str = include_str!("./workflows/sdxl_turbo.json");
-
-#[allow(dead_code)]
-const COMFY_API_TPL_SDXL: &'static str = include_str!("./workflows/sdxl_base.json");
+// const COMFY_API_TPL_SDXL_TURBO: &'static str = include_str!("./workflows/sdxl_turbo.json");
+// const COMFY_API_TPL_SDXL: &'static str = include_str!("./workflows/sdxl_base.json");
+const COMFY_API_TPL_SDXL_BASE64: &'static str = include_str!("./workflows/sdxl_base_base64.json");

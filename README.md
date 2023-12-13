@@ -25,3 +25,7 @@ helm install yum ./chart -f chart/values.yaml -f chart/secrets/values.yaml --kub
 export KUBECONFIG=~/.kube/config-muse-ai
 helm upgrade yum ./chart -f chart/values.yaml -f chart/secrets/values.yaml --kube-context muse-ai-test --dry-run
 ```
+
+## Comfy
+
+输入输出要支持 base64 需要这个 node https://github.com/ramyma/A8R8_ComfyUI_nodes
