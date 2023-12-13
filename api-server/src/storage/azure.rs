@@ -1,7 +1,7 @@
 use futures::future::join_all;
 use std::env;
 
-async fn upload(filename: &str, base64_image: &str) -> String {
+async fn upload(filename: &str, base64_image: &str, format: &str) -> String {
     let mut builder = opendal::services::Azblob::default();
     let azblob_endpoint = env::var("AZBLOB_ENDPOINT").unwrap();
     let azblob_key = env::var("AZBLOB_KEY").unwrap();
@@ -16,17 +16,18 @@ async fn upload(filename: &str, base64_image: &str) -> String {
     let op = opendal::Operator::new(builder).unwrap().finish();
 
     let output_image = data_encoding::BASE64.decode(base64_image.as_bytes()).unwrap();
-    op.write_with(&filename, output_image).content_type("image/png").await.unwrap();
+    let content_type = format!("image/{}", format);
+    op.write_with(&filename, output_image).content_type(&content_type).await.unwrap();
 
     format!("{}{}/{}", &azblob_endpoint, &azblob_container, &filename)
 }
 
-pub async fn upload_images(images: &Vec<(String, &String)>) -> Vec<String> {
+pub async fn upload_images(images: &Vec<(String, &String)>, format: &str) -> Vec<String> {
     let image_urls = images
         .iter()
         .enumerate()
         .map(|(_i, (filename, base64_image))| {
-            upload(filename, base64_image)
+            upload(filename, base64_image, format)
         })
         .collect::<Vec<_>>();
     join_all(image_urls).await

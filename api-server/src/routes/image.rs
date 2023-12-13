@@ -127,14 +127,15 @@ async fn process_task(task_payload: &TaskPayload) {
         tracing::info!("Task {} comfy success", task_id);
 
         let task_id: &str = &task_payload.task_id;
+        let format = "jpeg";
         let images = base64_images
             .iter()
             .enumerate()
             .map(|(i, base64_image)| {
-                let filename = format!("{}-{}.png", task_id, i);
+                let filename = format!("{}-{}.{}", task_id, i, format);
                 ( filename, base64_image )
             }).collect::<Vec<_>>();
-        let image_urls = crate::storage::azure::upload_images(&images).await;
+        let image_urls = crate::storage::azure::upload_images(&images, format).await;
 
         let result = json!({
             "images": image_urls.iter().map(|image_url| {

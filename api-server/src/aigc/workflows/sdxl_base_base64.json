@@ -43,6 +43,7 @@
     },
     "final": {
         "inputs": {
+            "extension": "jpeg",
             "images": ["40", 0]
         },
         "class_type": "Base64ImageOutput"
