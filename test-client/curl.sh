@@ -120,5 +120,5 @@ do
         "resultCallbackUrl": "http://localhost:3001/callback"
     }'
     echo "\n"
-    sleep 10
+    sleep 1
 done
