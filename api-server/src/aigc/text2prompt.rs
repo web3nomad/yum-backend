@@ -24,18 +24,25 @@ pub async fn request(params: &serde_json::Value) -> Result<GenerationParams, sup
     let message_json: serde_json::Value = serde_json::from_str(&message_str).unwrap();
     let generation_prompt = message_json["Art Bot"].as_str().unwrap();
 
+    let negative_prompt = format!("{}, {}",
+        "animal, chicken, frog, lobster, logo",
+        "ugly, deformed, noisy, blurry, distorted, grainy");
     // let magic = get_magic_prompt();
-    let prefix = "Food photography style";
-    let suffix = "appetizing, scrumptious, professional, culinary, high-resolution, commercial, ((solo)), food in the middle of the picture, close-up shot";
-    let generation_prompt = format!(
-        "{}, {}, {}", prefix, generation_prompt, suffix
-    );
+    let style = get_style();
+    let generation_prompt = style.replace("{style}", generation_prompt);
 
     let generation_params = GenerationParams {
         prompt: generation_prompt,
-        negative_prompt: String::from("animal, chicken, frog, lobster, logo, unappetizing, sloppy, unprofessional, noisy, blurry, nsfw"),
+        negative_prompt: String::from(negative_prompt),
     };
     Ok(generation_params)
+}
+
+fn get_style() -> &'static str {
+    let styles: Vec<&str> = vec![
+        "breathtaking {style}. award-winning, professional, highly detailed"
+    ];
+    return styles[0];
 }
 
 #[allow(dead_code)]
