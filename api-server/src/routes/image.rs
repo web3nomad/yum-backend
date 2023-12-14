@@ -44,7 +44,8 @@ impl IntoResponse for BadRequest {
 
 async fn handle_generate_image_request(
     body: String,
-    tx: Arc<broadcast::Sender<TaskPayload>>
+    tx: Arc<broadcast::Sender<TaskPayload>>,
+    comfy_count: usize,
 ) -> Result<Json<serde_json::Value>, impl IntoResponse> {
     let timestamp = chrono::Utc::now().timestamp_millis();
     let random = rand::random::<u32>() % 1000000;
@@ -55,7 +56,7 @@ async fn handle_generate_image_request(
     let callback_url = body_json["resultCallbackUrl"].as_str().unwrap().to_string();
 
     let task_payload = TaskPayload {
-        channel: (timestamp % 2) as usize,
+        channel: (timestamp % (comfy_count as i64)) as usize,
         task_id: task_id.clone(),
         params,
         callback_url,
@@ -176,6 +177,7 @@ pub fn get_routes() -> Router {
         broadcast::channel::<TaskPayload>(100);
     let tx = Arc::new(tx);
 
+    let comfy_count = comfy_origins.len();
     comfy_origins.iter().enumerate().for_each(|(index, comfy_origin)| {
         let comfy_origin = comfy_origin.clone();
         let mut rx = tx.subscribe();
@@ -200,7 +202,7 @@ pub fn get_routes() -> Router {
     let router: Router = Router::new()
         .route("/api/yum/generate/image", post({
             let tx = Arc::clone(&tx);
-            |body: String| handle_generate_image_request(body, tx)
+            move |body: String| handle_generate_image_request(body, tx, comfy_count)
         }))
         .route("/api/yum/generate/queueInfo", get(|| async {
             let queue_info = json!({
