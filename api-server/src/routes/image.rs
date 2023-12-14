@@ -1,7 +1,7 @@
 use serde_json::json;
 use std::env;
 use std::sync::Arc;
-use tokio::sync::mpsc;
+use tokio::sync::broadcast;
 use axum::{
     routing::{post, get},
     response::{Json, IntoResponse, Response},
@@ -19,7 +19,9 @@ fn establish_connection() -> MysqlConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
+#[derive(Clone)]
 struct TaskPayload {
+    channel: usize,
     task_id: String,
     params: serde_json::Value,
     callback_url: String,
@@ -42,7 +44,7 @@ impl IntoResponse for BadRequest {
 
 async fn handle_generate_image_request(
     body: String,
-    tx: Arc<mpsc::Sender<TaskPayload>>
+    tx: Arc<broadcast::Sender<TaskPayload>>
 ) -> Result<Json<serde_json::Value>, impl IntoResponse> {
     let timestamp = chrono::Utc::now().timestamp_millis();
     let random = rand::random::<u32>() % 1000000;
@@ -53,6 +55,7 @@ async fn handle_generate_image_request(
     let callback_url = body_json["resultCallbackUrl"].as_str().unwrap().to_string();
 
     let task_payload = TaskPayload {
+        channel: (timestamp % 2) as usize,
         task_id: task_id.clone(),
         params,
         callback_url,
@@ -71,10 +74,11 @@ async fn handle_generate_image_request(
         .execute(conn)
         .expect("Error saving new task");
 
-    if let Ok(()) = tx.try_send(task_payload) {
+    if let Ok(rem) = tx.send(task_payload) {
         let res_json = json!({
             "taskId": &task_id
         });
+        tracing::info!("Task {} queued, remaining receivers {}", &task_id, rem);
         return Ok(Json(res_json));
     } else {
         return Err(BadRequest { message: "Queue is full".to_string() });
@@ -101,7 +105,7 @@ async fn callback_generate_image(
     }
 }
 
-async fn process_task(task_payload: &TaskPayload) {
+async fn process_task(comfy_origin: &str, task_payload: &TaskPayload) {
     let conn = &mut establish_connection();
     let task_id = &task_payload.task_id;
 
@@ -121,7 +125,9 @@ async fn process_task(task_payload: &TaskPayload) {
 
     tracing::info!("Task {} text2prompt success", task_id);
 
-    if let Ok(base64_images) = crate::aigc::comfy::request(&generation_params).await {
+    if let Ok(base64_images) =
+        crate::aigc::comfy::request(comfy_origin, &generation_params).await
+    {
         tracing::info!("Task {} comfy success", task_id);
 
         let task_id: &str = &task_payload.task_id;
@@ -163,17 +169,32 @@ async fn process_task(task_payload: &TaskPayload) {
 }
 
 pub fn get_routes() -> Router {
-    let (
-        tx,
-        mut rx
-    ) = mpsc::channel::<TaskPayload>(100);
+    let comfy_origins = env::var("COMFYUI_ORIGINS").unwrap()
+        .split(",").map(|s| s.to_string()).collect::<Vec<_>>();
 
+    let (tx, _rx) =
+        broadcast::channel::<TaskPayload>(100);
     let tx = Arc::new(tx);
 
-    tokio::spawn(async move {
-        while let Some(task_payload) = rx.recv().await {
-            process_task(&task_payload).await;
-        }
+    comfy_origins.iter().enumerate().for_each(|(index, comfy_origin)| {
+        let comfy_origin = comfy_origin.clone();
+        let mut rx = tx.subscribe();
+        tokio::spawn(async move {
+            loop {
+                match rx.recv().await {
+                    Ok(task_payload) => {
+                        if task_payload.channel != index {
+                            continue;
+                        }
+                        tracing::info!("Task {} received by {}", task_payload.task_id, comfy_origin);
+                        process_task(&comfy_origin, &task_payload).await;
+                    },
+                    Err(e) => {
+                        tracing::error!("No Task Error: {:?}", e);
+                    }
+                }
+            }
+        });
     });
 
     let router: Router = Router::new()
