@@ -13,7 +13,7 @@ use axum::{
 use dotenvy::dotenv;
 use diesel::prelude::*;
 use std::env;
-
+use tower_http::validate_request::ValidateRequestHeaderLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 
@@ -26,17 +26,30 @@ async fn main() {
     MysqlConnection::establish(&database_url)
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 
-    // build our application with a single route
+    let api_routes = match env::var("API_TOKEN") {
+        Ok(api_token) => {
+            let layer = ValidateRequestHeaderLayer::bearer(&api_token);
+            Router::new()
+                .merge(crate::routes::text::get_routes()).route_layer(layer.clone())
+                .merge(crate::routes::image::get_routes()).route_layer(layer.clone())
+        }
+        Err(_) => {
+            Router::new()
+                .merge(crate::routes::text::get_routes())
+                .merge(crate::routes::image::get_routes())
+        }
+    };
+
     let app = Router::new()
         .route("/", get(|| async { "Hello, KFC!" }))
-        .merge(crate::routes::text::get_routes())
-        .merge(crate::routes::image::get_routes());
+        .merge(api_routes);
 
     let port = env::var("PORT").unwrap_or_else(|_| String::from("3000"));
     let host = env::var("HOST").unwrap_or_else(|_| String::from("0.0.0.0"));
-    let socket_addr: std::net::SocketAddr = format!("{}:{}", host, port).parse().unwrap();
+    let socket_addr = format!("{}:{}", host, port);
+    let listener = tokio::net::TcpListener::bind(&socket_addr).await.unwrap();
     tracing::info!("listening on http://{}", socket_addr);
-    axum::Server::bind(&socket_addr).serve(app.into_make_service()).await.unwrap();
+    axum::serve(listener, app).await.unwrap();
 }
 
 fn init_tracing() {

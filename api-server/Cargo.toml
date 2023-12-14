@@ -1,13 +1,13 @@
 [package]
 name = "api-server"
-version = "0.4.1"
+version = "0.5.0"
 publish = false
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = "0.6.20"
+axum = "0.7.2"
 chrono = "0.4.31"
 rand = "0.8.5"
 reqwest = { version = "0.11.22", features = ["json"] }
@@ -21,6 +21,7 @@ futures = "0.3.29"
 dotenvy = "0.15.7"
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tower-http = { version = "0.5.0", features = ["validate-request", "auth"] }
 
 # TODO: use published crate for yum-backend in production
 # sdwebuiapi = { path = "../../../rust/sdwebui-gateway/sdwebuiapi" }
