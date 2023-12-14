@@ -68,7 +68,7 @@ spec:
   tls:
   - secretName: wildcard-webui-museai-cc
   rules:
-  - host: yum-backend.webui-test.museai.cc
+  - host: yum-backend.{{ .Values.gatewayHost }}
     http:
       paths:
       - path: /

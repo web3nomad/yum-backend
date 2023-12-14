@@ -8,3 +8,5 @@ tlsSecret:
 yumBackend:
   imageTag: v0.4.0
   env: [] # set envs in ./secrets/values.yaml
+
+gatewayHost: webui-test.museai.cc

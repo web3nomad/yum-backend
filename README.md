@@ -14,7 +14,8 @@ Dockerfile 参考 https://github.com/hseeberger/hello-rs/blob/main/Dockerfile
 **Install**
 ```shell
 export KUBECONFIG=~/.kube/config-muse-ai
-helm install yum ./chart -f chart/values.yaml -f chart/secrets/values.yaml --kube-context muse-ai-test --dry-run
+helm install yum ./chart -f chart/values.yaml -f chart/secrets/values-test.yaml --kube-context muse-ai-test --dry-run
+helm install yum ./chart -f chart/values.yaml -f chart/secrets/values-prod.yaml --kube-context muse-ai-prod --dry-run
 ```
 
 正式安装的时候去掉 `--dry-run` 参数
@@ -23,7 +24,8 @@ helm install yum ./chart -f chart/values.yaml -f chart/secrets/values.yaml --kub
 
 ```shell
 export KUBECONFIG=~/.kube/config-muse-ai
-helm upgrade yum ./chart -f chart/values.yaml -f chart/secrets/values.yaml --kube-context muse-ai-test --dry-run
+helm upgrade yum ./chart -f chart/values.yaml -f chart/secrets/values-test.yaml --kube-context muse-ai-test --dry-run
+helm upgrade yum ./chart -f chart/values.yaml -f chart/secrets/values-prod.yaml --kube-context muse-ai-prod --dry-run
 ```
 
 ## Comfy
