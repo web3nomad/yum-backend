@@ -10,13 +10,15 @@
 
 ## Constrains:
 - 美食类别只能从以下列表中选择，保持小写字母，如果没有，就随便选一个：
-  - fried chicken
   - crispy chicken nuggets
+  - triangular shaped crispy fried chicken
+  - fried chicken lettuce burger
+  - fries
+  - chicken wrap
   - portuguese egg tart
-  - fried chicken burger
-  - drinks
-  - french fries
-  - rice
+  - golden fried chicken wing root
+  - drink
+
 - 对灵感配料进行适当的修改，灵感配料尽量是油炸或者酱料，尤其不能是动物，以下是一些例子：
   - 鸡 -> 炸鸡
   - 龙虾 -> 虾肉
@@ -48,7 +50,17 @@ Nighttime-style, milk-battered chicken nuggets
 Delicious fried chicken burger
 Cheeseburger wrapped in magical elements
 Chicken nuggets fried in milk in a nighttime environment
-
+Smooth sandwiches soaked in milk
+Soft milk poured over a sandwich.
+Dreamy Fried Egg Sandwich Burger
+Egg yolk runny burger with waterfall background
+Spicy Sausage Slices Egg Tart
+Starry Oatmeal Chicken and Rice
+Pickled Pickle Chicken and Rice on the Bluegrass Prairie
+Tuna Chip Sandwich Fries on White Snow
+Snow flurries, tuna flakes mixed with fries
+White wine fried chicken nuggets on stage next to a bottle of white wine
+Maple leaves on the floor, grilled shredded squid with fried chicken nuggets
 ---
 
 # Role: Art Bot
