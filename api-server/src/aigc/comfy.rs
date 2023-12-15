@@ -6,6 +6,7 @@ use crate::aigc::text2prompt::GenerationParams;
 pub enum ComfyError {
     ReqwestError(reqwest::Error),
     SerdeJsonError(serde_json::Error),
+    Error(String),
 }
 
 #[allow(dead_code)]
@@ -24,7 +25,7 @@ pub async fn request(
     let res = match client.post(url).json(&payload).send().await {
         Ok(v) => v,
         Err(e) => {
-            tracing::error!("Error: {:?}", e);
+            tracing::error!("Comfy Error: {:?}", e);
             return Err(ComfyError::ReqwestError(e));
         }
     };
@@ -45,7 +46,7 @@ pub async fn request(
         let res = match client.get(&url).send().await {
             Ok(v) => v,
             Err(e) => {
-                tracing::error!("Error: {:?}", e);
+                tracing::error!("Comfy Error: {:?}", e);
                 return Err(ComfyError::ReqwestError(e));
             }
         };
@@ -58,9 +59,15 @@ pub async fn request(
             //         format!("{}/view?filename={}&subfolder=&type=output", comfy_origin, filename)
             //     }).collect();
             // base64_images = fetch_images(images_urls).await;
-            base64_images = result["outputs"]["final"]["images"]
-                .as_array().unwrap().iter()
-                .map(|base64_str| base64_str.as_str().unwrap().to_owned())
+            let images = match result["outputs"]["final"]["images"].as_array() {
+                Some(v) => v,
+                None => {
+                    tracing::error!("Comfy Error: {:?}", serde_json::to_string(&result));
+                    return Err(ComfyError::Error("Images Parse Failed".to_owned()));
+                }
+            };
+            base64_images = images
+                .iter().map(|base64_str| base64_str.as_str().unwrap().to_owned())
                 .collect();
             break;
         }
