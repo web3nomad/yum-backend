@@ -7,7 +7,7 @@ pub struct GenerationParams {
     pub negative_prompt: String,
 }
 
-const SYSTEM_PROMPT: &str = include_str!("./prompts/workflow_prompt_v3.txt");
+const SYSTEM_PROMPT: &str = include_str!("./prompts/workflow_prompt_art.txt");
 
 pub async fn request(params: &serde_json::Value) -> Result<GenerationParams, super::openai::OpenAIError> {
     let user_input = params["prompt"].as_str().unwrap();
@@ -22,14 +22,15 @@ pub async fn request(params: &serde_json::Value) -> Result<GenerationParams, sup
     tracing::info!(r#"text2prompt "{}" {}"#, user_input, message_str);
 
     let message_json: serde_json::Value = serde_json::from_str(&message_str).unwrap();
-    let generation_prompt = message_json["Prompt"].as_str().unwrap();
+    let food_name = message_json["KFC Bot"]["Food"].as_str().unwrap();
+    let generation_prompt = message_json["Art Bot"].as_str().unwrap();
 
     let negative_prompt = format!("{}, {}",
         "animal, chicken, frog, lobster, logo",
         "ugly, deformed, noisy, blurry, distorted, grainy");
-    // let magic = get_magic_prompt();
     let style = get_style();
-    let generation_prompt = style.replace("{style}", generation_prompt);
+    let generation_prompt = style.replace(
+        "{style}", &format!("(({})), {}", food_name, generation_prompt));
 
     let generation_params = GenerationParams {
         prompt: generation_prompt,
