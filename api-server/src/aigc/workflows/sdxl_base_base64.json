@@ -26,7 +26,7 @@
             "sampler_name": "dpmpp_2m_sde_gpu",
             "scheduler": "karras",
             "start_at_step": 0,
-            "refine_at_step": -1,
+            "refine_at_step": 16,
             "preview_method": "auto",
             "vae_decode": "false",
             "sdxl_tuple": ["22", 0],

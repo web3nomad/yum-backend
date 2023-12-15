@@ -37,35 +37,62 @@
             - 是一个自然语言描述，表达用户想要的快餐食物摄影的配料、口味、搭配等等，<灵感配料>应当是<美食>中的一部分！
             - 你需要发挥你的想象力，将他们转换为合理的口味食材、搭配，但是请注意：
                 - 这些食材、搭配、口味必须是可以被合理画出来的食材元素、口味元素、搭配元素
-                - 如果<灵感配料>是小众食材，比如山药、竹笋等，由于绘画AI的局限性这些元素无法被画出来，所以请你将其转换为外观相似的食材，比如山药可以转换为土豆片，竹笋可以转换为萝卜片等等
+                - 如果<灵感配料>是小众食材，比如山药、竹笋等，由于绘画AI的局限性这些元素无法被画出来，所以请你将其转换为外观相似的食材，比如山药可以转换为土豆片，竹笋可以转换为萝卜片等等，以下是一些例子：
+                    - 山药 -> 白萝卜泥
+                    - 杨梅 -> 蓝莓酱
                 - 如果<灵感配料>是动物的名称，需要换成动物可被食用的切片、切块，比如"鸡"应当被转换为鸡肉片、鸡肉块等等，龙虾转换为去壳龙虾肉片等等！！！
-                - 如果<灵感配料>是物体的名称，需要转换成快餐周边的小玩具，比如"飞机"应当被转换为卡通可爱的飞机小玩具等等，注意是小玩具，不能比食物本身更大，需要重点描述玩具是小玩具！！！小玩具应该放在食物旁边，不要放在食物上下！！！
+                - 如果<灵感配料>是物体的名称，要尽量替换成油炸的食物或者酱料，尤其不能是动物！！！以下是一些例子：
+                    - 鸡 -> 炸鸡
+                    - 龙虾 -> 虾肉
+                    - 螃蟹 -> 蟹肉
+                    - 牛蛙 -> 油炸蛙腿
+                    - 鹅肉 -> 鹅肝酱
+                    - 猪肉 -> 炸猪排
         - 其中<美食类别>：
             - 是一个自然语言描述，表达用户想要的快餐食物摄影的类别、种类、类型等等
             - 美食类别必须被映射为下列快餐食物类别之一，如果用户输入的美食类别不在下列列表中，你可以在列表中选择一个最接近的类别：
-                - fried chicken
                 - crispy chicken nuggets
-                - egg tart
-                - burger
-                - drinks
-                - french fries
-                - rice
+                - triangular shaped crispy fried chicken
+                - fried chicken lettuce burger
+                - fries
+                - chicken wrap
+                - portuguese egg tart
+                - golden fried chicken wing root
+                - drink
             - 美食主体必须是上述列表中的一个！！！
 
     ### Prompt要求：
         - Prompt应当是基于上述转换（Transform）之后的结果进行生成的！！！
         - Prompt是一组由逗号分隔的自然语言描述，描述了用户想要的食物摄影的风格、场景元素、场景氛围、配料、口味、搭配、类别、种类、类型等等
         - Prompt中应当包含两个部分：
-            - 第一部分：画面的主体元素，元素之间用“,”隔开，给这些主体元素的英文词组增加小括号，如：(clouds), (ham), ((hamburger))，食物主体请用双括号！！！
-            - 第二部分：提供详细的、有创意的、有趣的、充满魔法的、富有想象力的词汇、场景、元素等等，以激发 AI 独特而有趣的图像，元素之间用“,”隔开，给这些元素的英文词组增加小括号，如：A fried chicken infused with ginger
+            - 第一部分：画面的主体元素，元素之间用“,”隔开！！！
+            - 第二部分：提供详细的、有创意的、有趣的、充满魔法的、富有想象力的词汇、场景、元素等等，以激发 AI 独特而有趣的图像，元素之间用“,”隔开，给这些元素的英文词组增加小括号，如：
+                - A fried chicken infused with ginger
+                - A tasty chicken sandwich
+                - A mystical, magic-infused cheeseburger
+                - Nighttime-style, milk-battered chicken nuggets
+                - Delicious fried chicken burger
+                - Cheeseburger wrapped in magical elements
+                - Chicken nuggets fried in milk in a nighttime environment
+                - Smooth sandwiches soaked in milk
+                - Soft milk poured over a sandwich
+                - Dreamy Fried Egg Sandwich Burger
+                - Egg yolk runny burger with waterfall background
+                - Spicy Sausage Slices Egg Tart
+                - Starry Oatmeal Chicken and Rice
+                - Pickled Pickle Chicken and Rice on the Bluegrass Prairie
+                - Tuna Chip Sandwich Fries on White Snow
+                - Snow flurries, tuna flakes mixed with fries
+                - White wine fried chicken nuggets on stage next to a bottle of white wine
+                - Maple leaves on the floor, grilled shredded squid with fried chicken nuggets
         - 在第二部分中，你需要增加一些能够使食材摄影更加富有食欲的词汇，充分发挥想象力让画面富有创造力！
         - 将以上生成的两部分文本用逗号连接，中间不包含任何换行符的 prompt 作为最终结果
-        - 在整体的prompt中，请添加一些小括号来强调对画面的要求，小括号的作用是告诉绘图AI这些词组是画面的重点（小括号越多，重点越突出），绘图AI会尽量将这些词组画得更加突出，请注意不是所有词汇都需要加小括号，只有画面的重点需要加小括号
+        - 在整体的prompt中，请添加一些小括号来强调对画面的要求，小括号的作用是告诉绘图AI这些词组是画面的重点，绘图AI会尽量将这些词组画得更加突出，请注意不是所有词汇都需要加小括号，只有画面的重点需要加小括号
 
 ## 输出json格式 $RESULT:
 {
     "Transform": xxx, xxx, xxx (用户输入的<灵感来源>、<灵感配料>、<美食类别>转换后的元素，英文),
-    "Prompt": xxx (英文prompt，越详细越好),
+    "Prompt": xxx (英文prompt，越详细越好，但是不超过20个英文单词),
     "Theme": xxx (中文主题描述，不要出现“摄影”两个字)
 }
 
