@@ -17,9 +17,15 @@ async fn upload(filename: &str, base64_image: &str, format: &str) -> String {
 
     let output_image = data_encoding::BASE64.decode(base64_image.as_bytes()).unwrap();
     let content_type = format!("image/{}", format);
-    op.write_with(&filename, output_image).content_type(&content_type).await.unwrap();
-
-    format!("{}{}/{}", &azblob_endpoint, &azblob_container, &filename)
+    match op.write_with(&filename, output_image).content_type(&content_type).await {
+        Ok(_) => {
+            format!("{}{}/{}", &azblob_endpoint, &azblob_container, &filename)
+        },
+        Err(e) => {
+            tracing::error!("Azure upload error: {}", e);
+            return String::from("");
+        }
+    }
 }
 
 pub async fn upload_images(images: &Vec<(String, &String)>, format: &str) -> Vec<String> {

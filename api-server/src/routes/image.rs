@@ -145,7 +145,8 @@ async fn process_task(comfy_origin: &str, task_payload: &TaskPayload) {
         let result = json!({
             "images": image_urls.iter().map(|image_url| {
                 json!({
-                    "src": image_url
+                    "src": image_url,
+                    "is_filtered": if image_url == "" { true } else { false },
                 })
             }).collect::<Vec<_>>()
         });
