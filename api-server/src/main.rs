@@ -26,19 +26,11 @@ async fn main() {
     MysqlConnection::establish(&database_url)
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
 
-    let api_routes = match env::var("API_TOKEN") {
-        Ok(api_token) => {
-            let layer = ValidateRequestHeaderLayer::bearer(&api_token);
-            Router::new()
-                .merge(crate::routes::text::get_routes()).route_layer(layer.clone())
-                .merge(crate::routes::image::get_routes()).route_layer(layer.clone())
-        }
-        Err(_) => {
-            Router::new()
-                .merge(crate::routes::text::get_routes())
-                .merge(crate::routes::image::get_routes())
-        }
-    };
+    let mut api_routes = Router::new().merge(routes::get_routes());
+    if let Ok(api_token) = env::var("API_TOKEN") {
+        let layer = ValidateRequestHeaderLayer::bearer(&api_token);
+        api_routes = api_routes.route_layer(layer);
+    }
 
     let app = Router::new()
         .route("/", get(|| async { "Hello, KFC!" }))

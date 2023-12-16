@@ -178,7 +178,7 @@ pub fn get_routes() -> Router {
         .split(",").map(|s| s.to_string()).collect::<Vec<_>>();
 
     let (tx, _rx) =
-        broadcast::channel::<TaskPayload>(100);
+        broadcast::channel::<TaskPayload>(500);
     let tx = Arc::new(tx);
 
     let comfy_count = comfy_origins.len();
