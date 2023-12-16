@@ -38,26 +38,67 @@ async fn callback_generate_image(
 }
 
 async fn process_task(comfy_origin: &str, task_payload: &TaskPayload) {
-    let conn = &mut establish_connection();
+    let conn: &mut MysqlConnection = &mut establish_connection();
     let task_id = &task_payload.task_id;
 
-    tracing::info!("Task {} started", task_id);
-    diesel::update(tasks::table)
-        .filter(tasks::task_id.eq(task_id))
-        .set(tasks::starts_at.eq(chrono::Utc::now().naive_utc()))
-        .execute(conn).unwrap();
+    async fn on_task_start(conn: &mut MysqlConnection, task_id: &str) {
+        tracing::info!("Task {} started", task_id);
+        diesel::update(tasks::table)
+            .filter(tasks::task_id.eq(task_id))
+            .set(tasks::starts_at.eq(chrono::Utc::now().naive_utc()))
+            .execute(conn).unwrap();
+    }
 
-    let (generation_params, theme) =
-        match text2prompt::request(&task_payload.params).await
-    {
-        Ok(v) => v,
+    async fn on_task_end(
+        conn: &mut MysqlConnection,
+        task_id: &str,
+        task_payload: &TaskPayload,
+        result: &serde_json::Value,
+        generation_params: &GenerationParams,
+    ) {
+        diesel::update(tasks::table)
+            .filter(tasks::task_id.eq(task_id))
+            .set((
+                tasks::generation_params.eq(serde_json::to_string(&generation_params).unwrap()),
+                tasks::result.eq(serde_json::to_string(&result).unwrap()),
+                tasks::ends_at.eq(chrono::Utc::now().naive_utc())
+            ))
+            .execute(conn)
+            .expect("Error updating task");
+
+        callback_generate_image(&task_payload, &generation_params, &result).await;
+
+        tracing::info!("Task {} end", task_id);
+    }
+
+    on_task_start(conn, task_id).await;
+
+    let (
+        generation_params, theme
+    ) = match text2prompt::request(&task_payload.params).await {
+        Ok(v) => {
+            tracing::info!("Task {} text2prompt success", task_id);
+            v
+        },
         Err(e) => {
-            tracing::error!("Task {} Error: {:?}", task_id, e);
+            tracing::error!("Task {} text2prompt failed: {:?}", task_id, e);
+            let generation_params = GenerationParams {
+                prompt: String::from(""),
+                negative_prompt: String::from(""),
+            };
+            let result = json!({
+                "theme": "",
+                "images": json!([
+                    { "src": "", "is_filtered": true },
+                    { "src": "", "is_filtered": true },
+                    { "src": "", "is_filtered": true },
+                    { "src": "", "is_filtered": true },
+                ])
+            });
+            on_task_end(conn, task_id, &task_payload, &result, &generation_params).await;
             return;
         }
     };
-
-    tracing::info!("Task {} text2prompt success", task_id);
 
     if let Ok(base64_images) = comfy::request(comfy_origin, &generation_params).await {
         tracing::info!("Task {} comfy success", task_id);
@@ -83,19 +124,7 @@ async fn process_task(comfy_origin: &str, task_payload: &TaskPayload) {
             }).collect::<Vec<_>>()
         });
 
-        diesel::update(tasks::table)
-            .filter(tasks::task_id.eq(task_id))
-            .set((
-                tasks::generation_params.eq(serde_json::to_string(&generation_params).unwrap()),
-                tasks::result.eq(serde_json::to_string(&result).unwrap()),
-                tasks::ends_at.eq(chrono::Utc::now().naive_utc())
-            ))
-            .execute(conn)
-            .expect("Error updating task");
-
-        callback_generate_image(&task_payload, &generation_params, &result).await;
-
-        tracing::info!("Task {} end", task_id);
+        on_task_end(conn, task_id, &task_payload, &result, &generation_params).await;
     } else {
         tracing::info!("Task {} comfy failed", task_id);
     }

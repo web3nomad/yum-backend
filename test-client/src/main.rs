@@ -8,6 +8,9 @@ use axum::{
 
 async fn fetch_images(images_urls: Vec<&str>) -> Vec<String> {
     async fn fetch(image_url: &str) -> String {
+        if image_url == "" {
+            return String::from("");
+        }
         // fetch image file from image_url and convert to base64
         let response = reqwest::get(image_url).await.unwrap();
         let image_bytes = response.bytes().await.unwrap();
