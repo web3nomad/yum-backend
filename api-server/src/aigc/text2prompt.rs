@@ -9,7 +9,9 @@ pub struct GenerationParams {
 
 const SYSTEM_PROMPT: &str = include_str!("./prompts/prompt_magic.txt");
 
-pub async fn request(params: &serde_json::Value) -> Result<GenerationParams, super::openai::OpenAIError> {
+pub async fn request(params: &serde_json::Value)
+    -> Result<(GenerationParams, String), super::openai::OpenAIError>
+{
     let user_input = params["prompt"].as_str().unwrap();
     let message_str = match super::openai::request(
         &SYSTEM_PROMPT, user_input, 0.0, true
@@ -26,9 +28,10 @@ pub async fn request(params: &serde_json::Value) -> Result<GenerationParams, sup
     // let generation_prompt = message_json["Art Bot"].as_str().unwrap();
     let food_name = message_json["Food"].as_str().unwrap();
     let generation_prompt = message_json["Prompt"].as_str().unwrap();
+    let theme = message_json["Theme"].as_str().unwrap();
 
     let negative_prompt = format!("{}, {}",
-        "animal, chicken, frog, lobster, logo, hands, nsfw",
+        "animal, chicken, frog, lobster, ((logo)), human, hand, fingers, nsfw",
         "ugly, deformed, noisy, blurry, distorted, grainy");
     let style = get_style();
     let generation_prompt = style.replace(
@@ -38,7 +41,7 @@ pub async fn request(params: &serde_json::Value) -> Result<GenerationParams, sup
         prompt: generation_prompt,
         negative_prompt: String::from(negative_prompt),
     };
-    Ok(generation_params)
+    Ok((generation_params, String::from(theme)))
 }
 
 fn get_style() -> &'static str {

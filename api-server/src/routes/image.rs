@@ -116,7 +116,9 @@ async fn process_task(comfy_origin: &str, task_payload: &TaskPayload) {
         .set(tasks::starts_at.eq(chrono::Utc::now().naive_utc()))
         .execute(conn).unwrap();
 
-    let generation_params = match crate::aigc::text2prompt::request(&task_payload.params).await {
+    let (generation_params, theme) =
+        match crate::aigc::text2prompt::request(&task_payload.params).await
+    {
         Ok(v) => v,
         Err(e) => {
             tracing::error!("Task {} Error: {:?}", task_id, e);
@@ -143,6 +145,7 @@ async fn process_task(comfy_origin: &str, task_payload: &TaskPayload) {
         let image_urls = crate::storage::azure::upload_images(&images, format).await;
 
         let result = json!({
+            "theme": theme,
             "images": image_urls.iter().map(|image_url| {
                 json!({
                     "src": image_url,
@@ -193,7 +196,7 @@ pub fn get_routes() -> Router {
                         process_task(&comfy_origin, &task_payload).await;
                     },
                     Err(e) => {
-                        tracing::error!("No Task Error: {:?}", e);
+                        tracing::error!("No Task Error: {} {:?}", comfy_origin, e);
                     }
                 }
             }

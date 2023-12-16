@@ -25,7 +25,7 @@ pub async fn request(
     let res = match client.post(url).json(&payload).send().await {
         Ok(v) => v,
         Err(e) => {
-            tracing::error!("Comfy Error: {:?}", e);
+            tracing::error!("Comfy Error: {} {:?}", comfy_origin, e);
             return Err(ComfyError::ReqwestError(e));
         }
     };
@@ -34,7 +34,7 @@ pub async fn request(
     let res_body_json: serde_json::Value = match serde_json::from_str(&res_body_text) {
         Ok(v) => v,
         Err(e) => {
-            tracing::error!("Error: {:?}", e);
+            tracing::error!("Error: {} {:?}", comfy_origin, e);
             return Err(ComfyError::SerdeJsonError(e));
         }
     };
@@ -46,7 +46,7 @@ pub async fn request(
         let res = match client.get(&url).send().await {
             Ok(v) => v,
             Err(e) => {
-                tracing::error!("Comfy Error: {:?}", e);
+                tracing::error!("Comfy Error: {} {:?}", comfy_origin, e);
                 return Err(ComfyError::ReqwestError(e));
             }
         };
@@ -62,7 +62,7 @@ pub async fn request(
             let images = match result["outputs"]["final"]["images"].as_array() {
                 Some(v) => v,
                 None => {
-                    tracing::error!("Comfy Error: {:?}", serde_json::to_string(&result));
+                    tracing::error!("Comfy Error: {} {:?}", comfy_origin, serde_json::to_string(&result));
                     return Err(ComfyError::Error("Images Parse Failed".to_owned()));
                 }
             };
