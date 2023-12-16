@@ -26,16 +26,15 @@ pub async fn request(params: &serde_json::Value)
     let message_json: serde_json::Value = serde_json::from_str(&message_str).unwrap();
     // let food_name = message_json["KFC Bot"]["Food"].as_str().unwrap();
     // let generation_prompt = message_json["Art Bot"].as_str().unwrap();
-    let food_name = message_json["Food"].as_str().unwrap();
+    // let food_name = message_json["Food"].as_str().unwrap();
     let generation_prompt = message_json["Prompt"].as_str().unwrap();
     let theme = message_json["Theme"].as_str().unwrap();
 
-    let negative_prompt = format!("{}, {}",
-        "animal, chicken, frog, lobster, ((logo)), human, hand, fingers, nsfw",
-        "ugly, deformed, noisy, blurry, distorted, grainy");
-    let style = get_style();
-    let generation_prompt = style.replace(
-        "{style}", &format!("((1 {})), {}", food_name, generation_prompt));
+    let (style_prompt, style_negative) = get_style();
+    let generation_prompt = style_prompt.replace("{style}", generation_prompt);
+    let negative_prompt = format!(
+        "animal, chicken, frog, lobster, ((logo)), human, hand, fingers, nsfw, {}",
+        style_negative);
 
     let generation_params = GenerationParams {
         prompt: generation_prompt,
@@ -44,10 +43,10 @@ pub async fn request(params: &serde_json::Value)
     Ok((generation_params, String::from(theme)))
 }
 
-fn get_style() -> &'static str {
-    let styles: Vec<&str> = vec![
-        "{style}",
-        "breathtaking {style}. award-winning, professional, highly detailed"
+fn get_style() -> (&'static str, &'static str) {
+    let styles: Vec<(&str, &str)> = vec![
+        ("{style}", ""),
+        ("breathtaking {style}. award-winning, professional, highly detailed", "ugly, deformed, noisy, blurry, distorted, grainy")
     ];
     return styles[0];
 }
