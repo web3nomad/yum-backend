@@ -4,15 +4,16 @@ use tokio::sync::broadcast::Sender;
 use axum::{
     routing::{post, get},
     response::{Json, IntoResponse, Response},
+    extract::Path,
     Router,
     http::StatusCode,
 };
 use diesel::prelude::*;
 use crate::schema::tasks;
 use crate::models::NewTask;
-// use crate::models::Task;
-use super::task_pool::TaskPayload;
+use crate::models::Task;
 use super::database::establish_connection;
+use super::task_pool::TaskPayload;
 
 struct BadRequest {
     message: String,
@@ -66,13 +67,33 @@ async fn handle_generate_image_request(
         Ok(rem) => {
             tracing::info!("Task {} queued, remaining receivers {}", &task_id, rem);
             let response = json!({ "taskId": &task_id });
-            return Ok(Json(response));
+            Ok(Json(response))
         },
         Err(e) => {
             tracing::error!("Failed to queue task {}: {}", &task_id, e);
             Err(BadRequest { message: "Queue is full".to_string() })
         }
     }
+}
+
+async fn fetch_task_result(task_id: String) -> Result<Json<serde_json::Value>, impl IntoResponse> {
+    let conn = &mut establish_connection();
+    let queryset = tasks::table.filter(tasks::task_id.eq(task_id)).first::<Task>(conn);
+    if let Err(_) = queryset {
+        let response = (StatusCode::NOT_FOUND, "Task not found").into_response();
+        return Err(response);
+    };
+    let task = queryset.unwrap();
+    let json_or_null = |s: &str|
+        serde_json::from_str::<serde_json::Value>(s)
+        .unwrap_or_else(|_| serde_json::Value::Null);
+    let task_json = json!({
+        "taskId": task.task_id,
+        "params": json_or_null(&task.params),
+        "result": json_or_null(&task.result),
+        "generationParams": json_or_null(&task.generation_params),
+    });
+    Ok(Json(task_json))
 }
 
 pub fn get_routes() -> Router {
@@ -82,6 +103,9 @@ pub fn get_routes() -> Router {
         .route("/api/yum/generate/image", post({
             let tx = Arc::clone(&tx);
             move |body: String| handle_generate_image_request(body, tx, comfy_count)
+        }))
+        .route("/api/yum/generate/result/:id", get({
+            |Path(task_id): Path<String>| fetch_task_result(task_id)
         }))
         .route("/api/yum/generate/queueInfo", get(|| async {
             let queue_info = json!({

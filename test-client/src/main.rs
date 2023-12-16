@@ -24,8 +24,8 @@ async fn fetch_images(images_urls: Vec<&str>) -> Vec<String> {
 async fn handle_callback(body: String) {
     let body_json = serde_json::from_str::<serde_json::Value>(&body).unwrap();
     let prompt: &str = body_json["params"]["prompt"].as_str().unwrap();
-    let generation_prompt = body_json["generation_params"]["prompt"].as_str().unwrap();
-    let generation_negative_prompt = body_json["generation_params"]["negative_prompt"].as_str().unwrap();
+    let generation_prompt = body_json["generationParams"]["prompt"].as_str().unwrap();
+    let generation_negative_prompt = body_json["generationParams"]["negative_prompt"].as_str().unwrap();
     let images_urls: Vec<&str> = body_json["result"]["images"]
         .as_array().unwrap()
         .iter().map(|image| image["src"].as_str().unwrap())

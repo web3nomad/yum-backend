@@ -28,7 +28,7 @@ async fn callback_generate_image(
             "taskId": task_payload.task_id,
             "params": task_payload.params,
             "result": result,
-            "generation_params": generation_params,
+            "generationParams": generation_params,
         }))
         .send().await;
     match callback_res {
