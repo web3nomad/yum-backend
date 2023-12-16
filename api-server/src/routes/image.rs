@@ -78,7 +78,8 @@ async fn handle_generate_image_request(
 
 async fn fetch_task_result(task_id: String) -> Result<Json<serde_json::Value>, impl IntoResponse> {
     let conn = &mut establish_connection();
-    let queryset = tasks::table.filter(tasks::task_id.eq(task_id)).first::<Task>(conn);
+    let queryset =
+        tasks::table.filter(tasks::task_id.eq(task_id)).first::<Task>(conn);
     if let Err(_) = queryset {
         let response = (StatusCode::NOT_FOUND, "Task not found").into_response();
         return Err(response);
@@ -132,6 +133,22 @@ async fn retry_task(
     }
 }
 
+async fn fetch_queue_info() -> Json<serde_json::Value> {
+    let conn = &mut establish_connection();
+    let pending_tasks = tasks::table
+        .filter(tasks::starts_at.is_null())
+        .count().get_result::<i64>(conn).unwrap();
+    let executing_tasks = tasks::table
+        .filter(tasks::starts_at.is_not_null())
+        .filter(tasks::ends_at.is_null())
+        .count().get_result::<i64>(conn).unwrap();
+    let queue_info = json!({
+        "pendingTasks": pending_tasks,
+        "executingTasks": executing_tasks,
+    });
+    Json(queue_info)
+}
+
 pub fn get_routes() -> Router {
     let (tx, comfy_count) = super::task_pool::init_task_pool();
 
@@ -146,13 +163,7 @@ pub fn get_routes() -> Router {
         .route("/api/yum/generate/result/:id/retry", post({
             move |Path(task_id): Path<String>| retry_task(task_id, tx, comfy_count)
         }))
-        .route("/api/yum/generate/queueInfo", get(|| async {
-            let queue_info = json!({
-                "pendingTasks": 5,
-                "executingTasks": 1,
-            });
-            Json(queue_info)
-        }));
+        .route("/api/yum/generate/queueInfo", get(fetch_queue_info));
 
     return router;
 }
