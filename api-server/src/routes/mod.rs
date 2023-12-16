@@ -1,3 +1,5 @@
+pub mod database;
+pub mod task_pool;
 pub mod text;
 pub mod image;
 
