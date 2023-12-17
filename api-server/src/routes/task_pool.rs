@@ -101,7 +101,7 @@ async fn process_task(comfy_origin: &str, task_payload: &TaskPayload) {
     };
 
     if let Ok(base64_images) = comfy::request(comfy_origin, &generation_params).await {
-        tracing::info!("Task {} comfy success", task_id);
+        tracing::info!("Task {} comfy success {}", task_id, comfy_origin);
 
         let task_id: &str = &task_payload.task_id;
         let format = "jpeg";
@@ -126,7 +126,7 @@ async fn process_task(comfy_origin: &str, task_payload: &TaskPayload) {
 
         on_task_end(conn, task_id, &task_payload, &result, &generation_params).await;
     } else {
-        tracing::info!("Task {} comfy failed", task_id);
+        tracing::info!("Task {} comfy failed {}", task_id, comfy_origin);
     }
 }
 

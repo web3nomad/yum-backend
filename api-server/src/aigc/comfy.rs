@@ -1,6 +1,5 @@
 use serde_json::json;
 use futures::future::join_all;
-// use std::env;
 use crate::aigc::text2prompt::GenerationParams;
 
 pub enum ComfyError {
@@ -14,7 +13,6 @@ pub async fn request(
     comfy_origin: &str,
     generation_params: &GenerationParams
 ) -> Result<Vec<String>, ComfyError> {
-    // let comfy_origin = env::var("COMFYUI_TEST_ORIGIN").unwrap();
     let params = get_sdxl_base_params(generation_params);
     let payload = json!({
         "prompt": params,
@@ -34,7 +32,7 @@ pub async fn request(
     let res_body_json: serde_json::Value = match serde_json::from_str(&res_body_text) {
         Ok(v) => v,
         Err(e) => {
-            tracing::error!("Error: {} {:?}", comfy_origin, e);
+            tracing::error!("Comfy Error: {} {:?}", comfy_origin, e);
             return Err(ComfyError::SerdeJsonError(e));
         }
     };

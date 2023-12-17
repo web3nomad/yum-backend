@@ -28,7 +28,7 @@
             "start_at_step": 0,
             "refine_at_step": 16,
             "preview_method": "auto",
-            "vae_decode": "false",
+            "vae_decode": "true",
             "sdxl_tuple": ["22", 0],
             "latent_image": ["22", 1]
         },

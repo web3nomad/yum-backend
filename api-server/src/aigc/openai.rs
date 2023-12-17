@@ -57,12 +57,13 @@ pub async fn request(
         .await {
             Ok(v) => v,
             Err(e) => {
-                tracing::error!("Error: {:?}", e);
+                tracing::error!("OpenAI Request Error: {:?}", e);
                 return Err(OpenAIError::ReqwestError(e));
             }
         };
 
     let result_str = res.text().await.unwrap();
+    tracing::debug!("OpenAI Response: {:?}", &result_str);
     let json_data: serde_json::Value = serde_json::from_str(&result_str).unwrap();
 
     match json_data["choices"][0]["message"]["content"].as_str() {

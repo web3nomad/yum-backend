@@ -94,4 +94,5 @@ do
     echo "$task_id"
     curl "http://localhost:3000/api/yum/generate/result/$task_id/retry" --request POST
     echo ""
+    sleep 1
 done

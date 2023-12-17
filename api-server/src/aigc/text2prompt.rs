@@ -30,8 +30,8 @@ pub async fn request(params: &serde_json::Value)
     let generation_prompt = message_json["Prompt"].as_str().unwrap();
     let theme = message_json["Theme"].as_str().unwrap();
 
-    let (style_prompt, style_negative) = get_style();
-    let generation_prompt = style_prompt.replace("{style}", generation_prompt);
+    let (style_positive, style_negative) = get_style();
+    let generation_prompt = style_positive.replace("{prompt}", generation_prompt);
     let negative_prompt = format!(
         "animal, chicken, frog, lobster, ((logo)), human, hand, fingers, nsfw, {}",
         style_negative);
@@ -44,10 +44,16 @@ pub async fn request(params: &serde_json::Value)
 }
 
 fn get_style() -> (&'static str, &'static str) {
-    let styles: Vec<(&str, &str)> = vec![
-        ("{style}", ""),
-        ("breathtaking {style}. award-winning, professional, highly detailed", "ugly, deformed, noisy, blurry, distorted, grainy")
-    ];
+    let styles: Vec<(&str, &str)> = vec![(
+        "food photography style, {prompt}",
+        ""
+    ), (
+        "breathtaking {prompt}. award-winning, professional, highly detailed",
+        "ugly, deformed, noisy, blurry, distorted, grainy"
+    ), (
+        "neonpunk food photography style {prompt}. vaporwave, neon, vibes, vibrant, stunningly beautiful, crisp, detailed, sleek, ultramodern, magenta highlights, high contrast, cinema",
+        "painting, drawing, illustration, glitch, deformed, mutated, cross-eyed, ugly, disfigured"
+    )];
     return styles[0];
 }
 
