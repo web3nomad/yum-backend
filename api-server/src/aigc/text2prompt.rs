@@ -3,8 +3,8 @@ use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct GenerationParams {
-    pub prompt: String,
-    pub negative_prompt: String,
+    pub positive: String,
+    pub negative: String,
 }
 
 const SYSTEM_PROMPT: &str = include_str!("./prompts/prompt_magic.txt");
@@ -27,18 +27,18 @@ pub async fn request(params: &serde_json::Value)
     // let food_name = message_json["KFC Bot"]["Food"].as_str().unwrap();
     // let generation_prompt = message_json["Art Bot"].as_str().unwrap();
     // let food_name = message_json["Food"].as_str().unwrap();
-    let generation_prompt = message_json["Prompt"].as_str().unwrap();
+    let positive_prompt = message_json["Prompt"].as_str().unwrap();
     let theme = message_json["Theme"].as_str().unwrap();
 
     let (style_positive, style_negative) = get_style();
-    let generation_prompt = style_positive.replace("{prompt}", generation_prompt);
+    let positive_prompt = style_positive.replace("{prompt}", positive_prompt);
     let negative_prompt = format!(
         "animal, chicken, frog, lobster, ((logo)), human, hand, fingers, nsfw, {}",
         style_negative);
 
     let generation_params = GenerationParams {
-        prompt: generation_prompt,
-        negative_prompt: String::from(negative_prompt),
+        positive: positive_prompt,
+        negative: String::from(negative_prompt),
     };
     Ok((generation_params, String::from(theme)))
 }

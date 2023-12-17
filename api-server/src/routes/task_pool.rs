@@ -83,16 +83,16 @@ async fn process_task(comfy_origin: &str, task_payload: &TaskPayload) {
         Err(e) => {
             tracing::error!("Task {} text2prompt failed: {:?}", task_id, e);
             let generation_params = GenerationParams {
-                prompt: String::from(""),
-                negative_prompt: String::from(""),
+                positive: String::from(""),
+                negative: String::from(""),
             };
             let result = json!({
                 "theme": "",
                 "images": json!([
-                    { "src": "", "is_filtered": true },
-                    { "src": "", "is_filtered": true },
-                    { "src": "", "is_filtered": true },
-                    { "src": "", "is_filtered": true },
+                    { "src": "", "filtered": true },
+                    { "src": "", "filtered": true },
+                    { "src": "", "filtered": true },
+                    { "src": "", "filtered": true },
                 ])
             });
             on_task_end(conn, task_id, &task_payload, &result, &generation_params).await;
@@ -119,7 +119,7 @@ async fn process_task(comfy_origin: &str, task_payload: &TaskPayload) {
             "images": image_urls.iter().map(|image_url| {
                 json!({
                     "src": image_url,
-                    "is_filtered": if image_url == "" { true } else { false },
+                    "filtered": if image_url == "" { true } else { false },
                 })
             }).collect::<Vec<_>>()
         });

@@ -27,9 +27,9 @@ async fn fetch_images(images_urls: Vec<&str>) -> Vec<String> {
 async fn handle_callback(body: String) {
     let body_json = serde_json::from_str::<serde_json::Value>(&body).unwrap();
     let user_prompt: &str = body_json["params"]["prompt"].as_str().unwrap();
-    let generation_prompt = body_json["generationParams"]["prompt"].as_str().unwrap();
-    let generation_negative_prompt = body_json["generationParams"]["negative_prompt"].as_str().unwrap();
-    if generation_prompt == "" {
+    let positive_prompt = body_json["generationParams"]["positive"].as_str().unwrap();
+    let negative_prompt = body_json["generationParams"]["negative"].as_str().unwrap();
+    if positive_prompt == "" {
         return;
     }
     let images_urls: Vec<&str> = body_json["result"]["images"]
@@ -44,7 +44,7 @@ async fn handle_callback(body: String) {
         std::fs::write(image_path, &image_bytes).unwrap();
     });
     let text_content = format!(
-        "Prompt:\n{}\n\nNegativePrompt:\n{}\n", generation_prompt, generation_negative_prompt);
+        "Prompt:\n{}\n\nNegativePrompt:\n{}\n", positive_prompt, negative_prompt);
     let image_path = format!("test-client/output/{} {}.txt", user_prompt, theme);
     std::fs::write(image_path, text_content).unwrap();
 }

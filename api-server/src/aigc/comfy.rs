@@ -92,8 +92,8 @@ const COMFY_API_TPL_SDXL_TURBO: &'static str = include_str!("./workflows/sdxl_tu
 #[allow(dead_code)]
 fn get_sdxl_turbo_params(generation_params: &GenerationParams) -> serde_json::Value {
     let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_TURBO).unwrap();
-    params["6"]["inputs"]["text"] = json!(generation_params.prompt);
-    params["7"]["inputs"]["text"] = json!(generation_params.negative_prompt);
+    params["6"]["inputs"]["text"] = json!(generation_params.positive);
+    params["7"]["inputs"]["text"] = json!(generation_params.negative);
     params["13"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
     return params;
 }
@@ -102,8 +102,8 @@ const COMFY_API_TPL_SDXL_LCM: &'static str = include_str!("./workflows/sdxl_lcm_
 #[allow(dead_code)]
 fn get_sdxl_lcm_params(generation_params: &GenerationParams) -> serde_json::Value {
     let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_LCM).unwrap();
-    params["22"]["inputs"]["positive"] = json!(generation_params.prompt);
-    params["22"]["inputs"]["negative"] = json!(generation_params.negative_prompt);
+    params["22"]["inputs"]["positive"] = json!(generation_params.positive);
+    params["22"]["inputs"]["negative"] = json!(generation_params.negative);
     params["31"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
     params["33"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
     return params;
@@ -113,8 +113,8 @@ const COMFY_API_TPL_SDXL_BASE64: &'static str = include_str!("./workflows/sdxl_b
 #[allow(dead_code)]
 fn get_sdxl_base_params(generation_params: &GenerationParams) -> serde_json::Value {
     let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_BASE64).unwrap();
-    params["22"]["inputs"]["positive"] = json!(generation_params.prompt);
-    params["22"]["inputs"]["negative"] = json!(generation_params.negative_prompt);
+    params["22"]["inputs"]["positive"] = json!(generation_params.positive);
+    params["22"]["inputs"]["negative"] = json!(generation_params.negative);
     params["39"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
     return params;
 }
