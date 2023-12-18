@@ -27,18 +27,18 @@ pub async fn request(params: &serde_json::Value)
     // let food_name = message_json["KFC Bot"]["Food"].as_str().unwrap();
     // let generation_prompt = message_json["Art Bot"].as_str().unwrap();
     // let food_name = message_json["Food"].as_str().unwrap();
-    let positive_prompt = message_json["Prompt"].as_str().unwrap();
     let theme = message_json["Theme"].as_str().unwrap();
+    let positive_prompt = message_json["Prompt"].as_str().unwrap();
+    let negative_prompt = "animal, chicken, frog, lobster, ((logo)), human, hand, fingers, nsfw";
+    // let negative_prompt = message_json["NegativePrompt"].as_str().unwrap();
 
     let (style_positive, style_negative) = get_style();
     let positive_prompt = style_positive.replace("{prompt}", positive_prompt);
-    let negative_prompt = format!(
-        "animal, chicken, frog, lobster, ((logo)), human, hand, fingers, nsfw, {}",
-        style_negative);
+    let negative_prompt = style_negative.replace("{prompt}", negative_prompt);
 
     let generation_params = GenerationParams {
         positive: positive_prompt,
-        negative: String::from(negative_prompt),
+        negative: negative_prompt,
     };
     Ok((generation_params, String::from(theme)))
 }
@@ -46,13 +46,13 @@ pub async fn request(params: &serde_json::Value)
 fn get_style() -> (&'static str, &'static str) {
     let styles: Vec<(&str, &str)> = vec![(
         "food photography style, {prompt}",
-        ""
+        "{prompt}"
     ), (
         "breathtaking {prompt}. award-winning, professional, highly detailed",
-        "ugly, deformed, noisy, blurry, distorted, grainy"
+        "{prompt}, ugly, deformed, noisy, blurry, distorted, grainy"
     ), (
         "neonpunk food photography style {prompt}. vaporwave, neon, vibes, vibrant, stunningly beautiful, crisp, detailed, sleek, ultramodern, magenta highlights, high contrast, cinema",
-        "painting, drawing, illustration, glitch, deformed, mutated, cross-eyed, ugly, disfigured"
+        "{prompt}, painting, drawing, illustration, glitch, deformed, mutated, cross-eyed, ugly, disfigured"
     )];
     return styles[0];
 }
