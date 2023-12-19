@@ -7,7 +7,7 @@ pub struct GenerationParams {
     pub negative: String,
 }
 
-const SYSTEM_PROMPT: &str = include_str!("./prompts/prompt_magic.txt");
+const SYSTEM_PROMPT: &str = include_str!("./prompts/prompt_v6.txt");
 
 pub async fn request(params: &serde_json::Value)
     -> Result<(GenerationParams, String), super::openai::OpenAIError>
@@ -29,8 +29,8 @@ pub async fn request(params: &serde_json::Value)
     // let food_name = message_json["Food"].as_str().unwrap();
     let theme = message_json["Theme"].as_str().unwrap();
     let positive_prompt = message_json["Prompt"].as_str().unwrap();
-    let negative_prompt = "animal, chicken, frog, lobster, ((logo)), human, hand, fingers, nsfw";
-    // let negative_prompt = message_json["NegativePrompt"].as_str().unwrap();
+    // let negative_prompt = "animal, chicken, frog, lobster, ((logo)), human, hand, fingers, nsfw";
+    let negative_prompt = message_json["NegativePrompt"].as_str().unwrap();
 
     let (style_positive, style_negative) = get_style();
     let positive_prompt = style_positive.replace("{prompt}", positive_prompt);
