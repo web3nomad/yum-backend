@@ -53,6 +53,9 @@ fn get_style() -> (&'static str, &'static str) {
     ), (
         "neonpunk food photography style {prompt}. vaporwave, neon, vibes, vibrant, stunningly beautiful, crisp, detailed, sleek, ultramodern, magenta highlights, high contrast, cinema",
         "{prompt}, painting, drawing, illustration, glitch, deformed, mutated, cross-eyed, ugly, disfigured"
+    ), (
+        "ethereal fantasy concept art of {prompt}. magnificent, celestial, ethereal, painterly, epic, majestic, magical, fantasy art, cover art, dreamy",
+        "{prompt}, photographic, realistic, realism, 35mm film, dslr, cropped, frame, text, deformed, glitch, noise, noisy, off-center, deformed, cross-eyed, closed eyes, bad anatomy, ugly, disfigured, sloppy"
     )];
     return styles[0];
 }
