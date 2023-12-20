@@ -45,8 +45,9 @@
         - fried chicken lettuce sandwich (香辣鸡腿堡，劲脆鸡腿堡)
         - french fries (薯条)
         - chicken wrap (鸡肉卷)
-        - portuguese egg tart (蛋挞)
+        - portuguese egg tart with puff pastry (蛋挞，酥皮蛋挞)
         - drink (饮料，咖啡)
+        - smooth ice cream cone (冰淇淋，甜筒)
         - a clear glass cup with no logos or markings, filled with brown sparkling water (可乐)
       - 美食主体必须是上述列表中的一个！！！
 

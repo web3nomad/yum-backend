@@ -45,6 +45,9 @@ pub async fn request(params: &serde_json::Value)
 
 fn get_style() -> (&'static str, &'static str) {
     let styles: Vec<(&str, &str)> = vec![(
+        "{prompt}",
+        "{prompt}"
+    ), (
         "food photography style, {prompt}",
         "{prompt}"
     ), (
@@ -104,7 +107,7 @@ fn get_magic_prompt() -> &'static str {
         "underwater, beautiful detailed water, coral, dynamic angle, floating, detailed light, floating hair, splash, fishes, leaves dress, feather, nature, sunlight, underwater forest, bloom, detailed glow, drenched, seaweed, fish, Tyndall effect",
         "extremely detailed CG unity 8k wallpaper, masterpiece, best quality, ultra-detailed, best illustration, best shadow, an extremely delicate and beautiful, dynamic angle,floating, fairyland,dynamic angle,sea of flowers,beautiful detailed garden,wind,classic,spring, detailed light, feather, nature, sunlight, river, forest, floating palace, the best building,beautiful and delicate water, painting, sketch, bloom, shine",
         "masterpiece, the best quality, super fine illustrations, beautiful and delicate water, very delicate light, nature, painting, fine lighting, more transparent stars, high-quality snowflakes, high-quality mountains, very fine 8KCG wallpapers, plateau, snow mountain, sunrise, randomly distributed clouds, snow field, cliff, rotating star sky, lake in mountain stream, luminous particles",
-        "1980s style,simple background, retro artstyle",
+        "1980s style, simple background, retro artstyle",
         "white hair, red long hair, red eyes, full body, with sword, angry face, beautiful detailed eyes, Blood drop,Blood fog, floating hair, disheveled hair,  Splashing blood, Bloodstain",
         "dragon, dragon background",
         "hair fluttering in the wind, mechanical arm armor, mechanical body armor,riding motor, bodysuit, ruins of city in war, fire, burning cars, burning buildings, air force fleet in the sky",
