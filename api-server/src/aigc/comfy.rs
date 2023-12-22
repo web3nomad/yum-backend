@@ -23,7 +23,7 @@ pub async fn request(
     let res = match client.post(url).json(&payload).send().await {
         Ok(v) => v,
         Err(e) => {
-            tracing::error!("Comfy Error: {} {:?}", comfy_origin, e);
+            tracing::error!("Failed request comfy: {} {:?}", comfy_origin, e);
             return Err(ComfyError::ReqwestError(e));
         }
     };
@@ -32,7 +32,7 @@ pub async fn request(
     let res_body_json: serde_json::Value = match serde_json::from_str(&res_body_text) {
         Ok(v) => v,
         Err(e) => {
-            tracing::error!("Comfy Error: {} {:?}", comfy_origin, e);
+            tracing::error!("Failed parsing comfy response: {} {:?}", comfy_origin, e);
             return Err(ComfyError::SerdeJsonError(e));
         }
     };
@@ -44,12 +44,18 @@ pub async fn request(
         let res = match client.get(&url).send().await {
             Ok(v) => v,
             Err(e) => {
-                tracing::error!("Comfy Error: {} {:?}", comfy_origin, e);
+                tracing::error!("Failed request comfy result: {} {:?}", comfy_origin, e);
                 return Err(ComfyError::ReqwestError(e));
             }
         };
         let res_body_text = res.text().await.unwrap();
-        let res_body_json: serde_json::Value = serde_json::from_str(&res_body_text).unwrap();
+        let res_body_json: serde_json::Value = match serde_json::from_str(&res_body_text) {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::error!("Failed parsing comfy result: {} {:?}", comfy_origin, e);
+                return Err(ComfyError::SerdeJsonError(e));
+            }
+        };
         if let Some(result) = res_body_json.get(prompt_id) {
             // let images_urls = result["outputs"]["final"]["images"]
             //     .as_array().unwrap().iter().map(|v| {
@@ -61,7 +67,7 @@ pub async fn request(
                 Some(v) => v,
                 None => {
                     tracing::error!("Comfy Error: {} {:?}", comfy_origin, serde_json::to_string(&result));
-                    return Err(ComfyError::Error("Images Parse Failed".to_owned()));
+                    return Err(ComfyError::Error("Failed parsing comfy result images".to_owned()));
                 }
             };
             base64_images = images

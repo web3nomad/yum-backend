@@ -24,12 +24,9 @@ pub async fn request(params: &serde_json::Value)
     tracing::info!(r#"text2prompt "{}" {}"#, user_input, message_str);
 
     let message_json: serde_json::Value = serde_json::from_str(&message_str).unwrap();
-    // let food_name = message_json["KFC Bot"]["Food"].as_str().unwrap();
-    // let generation_prompt = message_json["Art Bot"].as_str().unwrap();
-    // let food_name = message_json["Food"].as_str().unwrap();
     let theme = message_json["Theme"].as_str().unwrap();
     let positive_prompt = message_json["Prompt"].as_str().unwrap();
-    let negative_prompt = "animal, chicken, frog, lobster, ((logo)), human, hand, fingers, nsfw";
+    let negative_prompt = "((animal)), ((chicken)), ((logo)), human, hand, fingers, nsfw";
     // let negative_prompt = message_json["NegativePrompt"].as_str().unwrap();
 
     let (style_positive, style_negative) = get_style();
@@ -46,9 +43,6 @@ pub async fn request(params: &serde_json::Value)
 fn get_style() -> (&'static str, &'static str) {
     let styles: Vec<(&str, &str)> = vec![(
         "{prompt}",
-        "{prompt}"
-    ), (
-        "food photography style, {prompt}",
         "{prompt}"
     ), (
         "breathtaking {prompt}. award-winning, professional, highly detailed",
