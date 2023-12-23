@@ -27,9 +27,9 @@ pub async fn request(params: &serde_json::Value)
     let theme = message_json["Theme"].as_str().unwrap();
     let kind = message_json["Kind"].as_str().unwrap();
     let positive_prompt = message_json["Prompt"].as_str().unwrap();
-    let negative_prompt = "((animal)), ((chicken)), ((logo)), human, hand, fingers, nsfw";
-    // let negative_prompt = message_json["NegativePrompt"].as_str().unwrap();
-    let style_index = if kind == "汉堡" || kind == "鸡肉卷" || kind == "小食" { 1 } else { 0 };
+    // let negative_prompt = "((animal)), ((chicken)), ((logo)), human, hand, fingers, nsfw";
+    let negative_prompt = message_json["NegativePrompt"].as_str().unwrap();
+    let style_index = if kind == "汉堡" || kind == "鸡肉卷" || kind == "薯条" || kind == "小食" { 1 } else { 0 };
 
     let (style_positive, style_negative) = get_style(style_index);
     let positive_prompt = style_positive.replace("{prompt}", positive_prompt);
@@ -45,15 +45,15 @@ pub async fn request(params: &serde_json::Value)
 fn get_style(index: usize) -> (&'static str, &'static str) {
     let styles: Vec<(&str, &str)> = vec![(
         "{prompt}",
-        "{prompt}"
+        "{prompt}, human, any part of the human body, lowres, bad anatomy, cropped, worst quality, low quality, poorly drawn, ugly, deformities, nsfw"
     ), (
-        "food photography style, {prompt}",
-        "{prompt}"
+        "food photography style, {prompt}. appetizing, award-winning, culinary",
+        "{prompt}, unappetizing, sloppy, unprofessional, noisy, blurry, human, any part of the human body, lowres, bad anatomy, cropped, worst quality, low quality, poorly drawn, ugly, deformities, nsfw"
     ), (
         "breathtaking {prompt}. award-winning, professional, highly detailed",
         "{prompt}, ugly, deformed, noisy, blurry, distorted, grainy"
     ), (
-        "neonpunk food photography style {prompt}. vaporwave, neon, vibes, vibrant, stunningly beautiful, crisp, detailed, sleek, ultramodern, magenta highlights, high contrast, cinema",
+        "neonpunk {prompt}. vaporwave, neon, vibes, vibrant, stunningly beautiful, crisp, detailed, sleek, ultramodern, magenta highlights, high contrast, cinema",
         "{prompt}, painting, drawing, illustration, glitch, deformed, mutated, cross-eyed, ugly, disfigured"
     ), (
         "ethereal fantasy concept art of {prompt}. magnificent, celestial, ethereal, painterly, epic, majestic, magical, fantasy art, cover art, dreamy",
