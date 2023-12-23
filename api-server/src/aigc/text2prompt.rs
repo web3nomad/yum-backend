@@ -25,11 +25,13 @@ pub async fn request(params: &serde_json::Value)
 
     let message_json: serde_json::Value = serde_json::from_str(&message_str).unwrap();
     let theme = message_json["Theme"].as_str().unwrap();
+    let kind = message_json["Kind"].as_str().unwrap();
     let positive_prompt = message_json["Prompt"].as_str().unwrap();
     let negative_prompt = "((animal)), ((chicken)), ((logo)), human, hand, fingers, nsfw";
     // let negative_prompt = message_json["NegativePrompt"].as_str().unwrap();
+    let style_index = if kind == "汉堡" || kind == "鸡肉卷" || kind == "小食" { 1 } else { 0 };
 
-    let (style_positive, style_negative) = get_style();
+    let (style_positive, style_negative) = get_style(style_index);
     let positive_prompt = style_positive.replace("{prompt}", positive_prompt);
     let negative_prompt = style_negative.replace("{prompt}", negative_prompt);
 
@@ -40,9 +42,12 @@ pub async fn request(params: &serde_json::Value)
     Ok((generation_params, String::from(theme)))
 }
 
-fn get_style() -> (&'static str, &'static str) {
+fn get_style(index: usize) -> (&'static str, &'static str) {
     let styles: Vec<(&str, &str)> = vec![(
         "{prompt}",
+        "{prompt}"
+    ), (
+        "food photography style, {prompt}",
         "{prompt}"
     ), (
         "breathtaking {prompt}. award-winning, professional, highly detailed",
@@ -54,7 +59,7 @@ fn get_style() -> (&'static str, &'static str) {
         "ethereal fantasy concept art of {prompt}. magnificent, celestial, ethereal, painterly, epic, majestic, magical, fantasy art, cover art, dreamy",
         "{prompt}, photographic, realistic, realism, 35mm film, dslr, cropped, frame, text, deformed, glitch, noise, noisy, off-center, deformed, cross-eyed, closed eyes, bad anatomy, ugly, disfigured, sloppy"
     )];
-    return styles[0];
+    return styles[index];
 }
 
 #[allow(dead_code)]
