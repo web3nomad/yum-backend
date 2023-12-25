@@ -67,8 +67,20 @@ metadata:
 spec:
   tls:
   - secretName: wildcard-webui-museai-cc
+    hosts:
+    - yum-backend.{{ .Values.gatewayHost }}
   rules:
   - host: yum-backend.{{ .Values.gatewayHost }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: yum-backend-svc
+            port:
+              number: 3000
+  - host: yum-backend-80.{{ .Values.gatewayHost }}
     http:
       paths:
       - path: /
