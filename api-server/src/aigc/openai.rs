@@ -9,6 +9,7 @@ pub enum OpenAIError {
 }
 
 pub async fn request(
+    model_name: &str,
     system_prompt: &str,
     prompt: &str,
     temprature: f32,
@@ -18,7 +19,6 @@ pub async fn request(
     let version = env::var("OPENAI_API_VERSION").unwrap();
     let endpoint = env::var("OPENAI_ENDPOINT").unwrap();
 
-    let model_name = "gpt-4";
     let response_format = if json {
         "json_object"
     } else {

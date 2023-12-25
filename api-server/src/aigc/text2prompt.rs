@@ -14,7 +14,7 @@ pub async fn request(params: &serde_json::Value)
 {
     let user_input = params["prompt"].as_str().unwrap();
     let message_str = match super::openai::request(
-        &SYSTEM_PROMPT, user_input, 0.0, true
+        "gpt-4", &SYSTEM_PROMPT, user_input, 0.0, true
     ).await {
         Ok(v) => v,
         Err(e) => {

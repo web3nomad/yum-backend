@@ -23,7 +23,7 @@ async fn handler(body: String) -> Result<Json<serde_json::Value>, impl IntoRespo
     let params = &json_body["params"];
     let prompt = json_body["params"]["prompt"].as_str().unwrap();
     let message = match crate::aigc::openai::request(
-        &SYSTEM_PROMPT, prompt, 1.0, false
+        "gpt-35-turbo", &SYSTEM_PROMPT, prompt, 1.0, false
     ).await {
         Ok(v) => v,
         Err(e) => {
