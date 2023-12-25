@@ -6,7 +6,7 @@ tlsSecret:
       crt: "" # set in ./secrets/values.yaml
 
 yumBackend:
-  imageTag: v0.7.5
+  imageTag: v0.7.7
   env: [] # set envs in ./secrets/values.yaml
 
 gatewayHost: "" # set in ./secrets/values.yaml
