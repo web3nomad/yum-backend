@@ -13,7 +13,7 @@ pub async fn request(
     comfy_origin: &str,
     generation_params: &GenerationParams
 ) -> Result<Vec<String>, ComfyError> {
-    let params = get_sdxl_base_params(generation_params);
+    let params = get_sdxl_lcm_params(generation_params);
     let payload = json!({
         "prompt": params,
     });

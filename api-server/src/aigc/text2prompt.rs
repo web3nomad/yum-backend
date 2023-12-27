@@ -44,10 +44,10 @@ pub async fn request(params: &serde_json::Value)
 
 fn get_style(index: usize) -> (&'static str, &'static str) {
     let styles: Vec<(&str, &str)> = vec![(
-        "{prompt}",
+        "{prompt}, ((best quality)), 8k",
         "{prompt}, human, any part of the human body, lowres, bad anatomy, cropped, worst quality, low quality, poorly drawn, ugly, deformities, nsfw"
     ), (
-        "food photography style, {prompt}. appetizing, award-winning, culinary",
+        "food photography style, {prompt}. appetizing, award-winning, culinary, ((best quality)), 8k",
         "{prompt}, unappetizing, sloppy, unprofessional, noisy, blurry, human, any part of the human body, lowres, bad anatomy, cropped, worst quality, low quality, poorly drawn, ugly, deformities, nsfw"
     ), (
         "breathtaking {prompt}. award-winning, professional, highly detailed",
