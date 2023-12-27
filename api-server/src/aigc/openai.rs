@@ -48,6 +48,8 @@ pub async fn request(
         "top_p": 0.95,
         "stop": null
     });
+
+    let t = chrono::Utc::now().naive_utc();
     let res = match reqwest::Client::new()
         .post(url)
         .header("Content-Type", "application/json")
@@ -61,9 +63,10 @@ pub async fn request(
                 return Err(OpenAIError::ReqwestError(e));
             }
         };
+    let t = (chrono::Utc::now().naive_utc() - t).num_seconds();
 
     let result_str = res.text().await.unwrap();
-    tracing::debug!("OpenAI Response: {:?}", &result_str);
+    tracing::debug!("OpenAI Response ({}s): {:?}", t, &result_str);
     let json_data: serde_json::Value = serde_json::from_str(&result_str).unwrap();
 
     match json_data["choices"][0]["message"]["content"].as_str() {
