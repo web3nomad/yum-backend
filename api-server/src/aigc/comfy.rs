@@ -9,11 +9,12 @@ pub enum ComfyError {
 }
 
 #[allow(dead_code)]
-pub async fn request(
+async fn request_one_comfy(
     comfy_origin: &str,
-    generation_params: &GenerationParams
+    generation_params: &GenerationParams,
+    batch_size: usize
 ) -> Result<Vec<String>, ComfyError> {
-    let params = get_sdxl_lcm_params(generation_params);
+    let params = get_sdxl_base_params(generation_params, batch_size);
     let payload = json!({
         "prompt": params,
     });
@@ -80,6 +81,34 @@ pub async fn request(
 }
 
 #[allow(dead_code)]
+pub async fn request(
+    comfy_origins: &Vec<String>,
+    generation_params: &GenerationParams
+) -> Result<Vec<String>, ComfyError> {
+    if comfy_origins.len() == 4 {
+        let futures = comfy_origins.iter().map(|comfy_origin| {
+            request_one_comfy(comfy_origin, generation_params, 1)
+        }).collect::<Vec<_>>();
+        let results = join_all(futures).await;
+        let mut base64_images: Vec<String> = vec![];
+        for result in results {
+            match result {
+                Ok(mut v) => base64_images.append(&mut v),
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(base64_images)
+    } else if comfy_origins.len() == 1 {
+        let comfy_origin = comfy_origins[0].as_str();
+        let batch_size = 4;
+        let base64_images = request_one_comfy(comfy_origin, generation_params, batch_size).await?;
+        Ok(base64_images)
+    } else {
+        panic!("comfy_origins.len() must be 1 or 4");
+    }
+}
+
+#[allow(dead_code)]
 async fn fetch_images(images_urls: Vec<String>) -> Vec<String> {
     async fn fetch(image_url: &str) -> String {
         let response = reqwest::get(image_url).await.unwrap();
@@ -96,8 +125,9 @@ async fn fetch_images(images_urls: Vec<String>) -> Vec<String> {
 
 const COMFY_API_TPL_SDXL_TURBO: &'static str = include_str!("./workflows/sdxl_turbo.json");
 #[allow(dead_code)]
-fn get_sdxl_turbo_params(generation_params: &GenerationParams) -> serde_json::Value {
+fn get_sdxl_turbo_params(generation_params: &GenerationParams, batch_size: usize) -> serde_json::Value {
     let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_TURBO).unwrap();
+    params["5"]["inputs"]["batch_size"] = serde_json::Value::from(batch_size);
     params["6"]["inputs"]["text"] = json!(generation_params.positive);
     params["7"]["inputs"]["text"] = json!(generation_params.negative);
     params["13"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
@@ -106,8 +136,9 @@ fn get_sdxl_turbo_params(generation_params: &GenerationParams) -> serde_json::Va
 
 const COMFY_API_TPL_SDXL_LCM: &'static str = include_str!("./workflows/sdxl_lcm_lora.json");
 #[allow(dead_code)]
-fn get_sdxl_lcm_params(generation_params: &GenerationParams) -> serde_json::Value {
+fn get_sdxl_lcm_params(generation_params: &GenerationParams, batch_size: usize) -> serde_json::Value {
     let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_LCM).unwrap();
+    params["22"]["inputs"]["batch_size"] = serde_json::Value::from(batch_size);
     params["22"]["inputs"]["positive"] = json!(generation_params.positive);
     params["22"]["inputs"]["negative"] = json!(generation_params.negative);
     params["31"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());
@@ -117,8 +148,9 @@ fn get_sdxl_lcm_params(generation_params: &GenerationParams) -> serde_json::Valu
 
 const COMFY_API_TPL_SDXL_BASE64: &'static str = include_str!("./workflows/sdxl_base_base64.json");
 #[allow(dead_code)]
-fn get_sdxl_base_params(generation_params: &GenerationParams) -> serde_json::Value {
+fn get_sdxl_base_params(generation_params: &GenerationParams, batch_size: usize) -> serde_json::Value {
     let mut params: serde_json::Value = serde_json::from_str(COMFY_API_TPL_SDXL_BASE64).unwrap();
+    params["22"]["inputs"]["batch_size"] = serde_json::Value::from(batch_size);
     params["22"]["inputs"]["positive"] = json!(generation_params.positive);
     params["22"]["inputs"]["negative"] = json!(generation_params.negative);
     params["39"]["inputs"]["noise_seed"] = serde_json::Value::from(rand::random::<u32>());

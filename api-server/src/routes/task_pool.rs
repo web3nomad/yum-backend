@@ -37,7 +37,7 @@ async fn callback_generate_image(
     }
 }
 
-async fn process_task(comfy_origin: &str, task_payload: &TaskPayload) {
+async fn process_task(comfy_origins: &Vec<String>, task_payload: &TaskPayload) {
     let conn: &mut MysqlConnection = &mut establish_connection();
     let task_id = &task_payload.task_id;
 
@@ -100,8 +100,8 @@ async fn process_task(comfy_origin: &str, task_payload: &TaskPayload) {
         }
     };
 
-    if let Ok(base64_images) = comfy::request(comfy_origin, &generation_params).await {
-        tracing::info!("Task {} comfy success {}", task_id, comfy_origin);
+    if let Ok(base64_images) = comfy::request(comfy_origins, &generation_params).await {
+        tracing::info!("Task {} comfy success {:?}", task_id, comfy_origins);
 
         let task_id: &str = &task_payload.task_id;
         let format = "jpeg";
@@ -126,7 +126,7 @@ async fn process_task(comfy_origin: &str, task_payload: &TaskPayload) {
 
         on_task_end(conn, task_id, &task_payload, &result, &generation_params).await;
     } else {
-        tracing::info!("Task {} comfy failed {}", task_id, comfy_origin);
+        tracing::info!("Task {} comfy failed {:?}", task_id, comfy_origins);
     }
 }
 
@@ -138,8 +138,17 @@ pub fn init_task_pool() -> (Arc<broadcast::Sender<TaskPayload>>, usize) {
     let tx = Arc::new(tx);
 
     let comfy_count = comfy_origins.len();
-    comfy_origins.iter().enumerate().for_each(|(index, comfy_origin)| {
-        let comfy_origin = comfy_origin.clone();
+    let (workers_count, comfy_origins_group): (usize, Vec<Vec<String>>) = if comfy_count == 4 {
+        (1, vec![comfy_origins])
+    } else {
+        let comfy_origins = comfy_origins
+            .iter()
+            .map(|comfy_origin| vec![comfy_origin.clone()])
+            .collect::<Vec<_>>();
+        (comfy_count, comfy_origins)
+    };
+    comfy_origins_group.iter().enumerate().for_each(|(index, comfy_origins)| {
+        let comfy_origins = comfy_origins.clone();
         let mut rx = tx.subscribe();
         tokio::spawn(async move {
             loop {
@@ -148,16 +157,16 @@ pub fn init_task_pool() -> (Arc<broadcast::Sender<TaskPayload>>, usize) {
                         if task_payload.channel != index {
                             continue;
                         }
-                        tracing::info!("Task {} received by {}", task_payload.task_id, comfy_origin);
-                        process_task(&comfy_origin, &task_payload).await;
+                        tracing::info!("Task {} received by {:?}", task_payload.task_id, comfy_origins);
+                        process_task(&comfy_origins, &task_payload).await;
                     },
                     Err(e) => {
-                        tracing::error!("No Task Error: {} {:?}", comfy_origin, e);
+                        tracing::error!("No Task Error: {:?} {:?}", comfy_origins, e);
                     }
                 }
             }
         });
     });
 
-    return (tx, comfy_count);
+    return (tx, workers_count);
 }

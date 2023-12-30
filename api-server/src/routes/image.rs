@@ -33,7 +33,7 @@ impl IntoResponse for BadRequest {
 async fn handle_generate_image_request(
     body: String,
     tx: Arc<Sender<TaskPayload>>,
-    comfy_count: usize,
+    workers_count: usize,
 ) -> Result<Json<serde_json::Value>, impl IntoResponse> {
     let timestamp = chrono::Utc::now().timestamp_millis();
     let rand_suffix = rand::random::<usize>() % 1000000;
@@ -44,7 +44,7 @@ async fn handle_generate_image_request(
     let callback_url = body_json["resultCallbackUrl"].as_str().unwrap().to_string();
 
     let task_payload = TaskPayload {
-        channel: rand_suffix % comfy_count,
+        channel: rand_suffix % workers_count,
         task_id: task_id.clone(),
         params,
         callback_url,
@@ -100,7 +100,7 @@ async fn fetch_task_result(task_id: String) -> Result<Json<serde_json::Value>, i
 async fn retry_task(
     task_id: String,
     tx: Arc<Sender<TaskPayload>>,
-    comfy_count: usize
+    workers_count: usize
 ) -> Result<Json<serde_json::Value>, impl IntoResponse> {
     let conn = &mut establish_connection();
     let queryset = tasks::table.filter(tasks::task_id.eq(&task_id)).first::<Task>(conn);
@@ -114,7 +114,7 @@ async fn retry_task(
         return Err(response);
     };
     let task_payload = TaskPayload {
-        channel: rand::random::<usize>() % comfy_count,
+        channel: rand::random::<usize>() % workers_count,
         task_id: task.task_id,
         params: serde_json::from_str(&task.params).unwrap(),
         callback_url: task.callback_url,
@@ -150,18 +150,18 @@ async fn fetch_queue_info() -> Json<serde_json::Value> {
 }
 
 pub fn get_routes() -> Router {
-    let (tx, comfy_count) = super::task_pool::init_task_pool();
+    let (tx, workers_count) = super::task_pool::init_task_pool();
 
     let router: Router = Router::new()
         .route("/api/yum/generate/image", post({
             let tx = Arc::clone(&tx);
-            move |body: String| handle_generate_image_request(body, tx, comfy_count)
+            move |body: String| handle_generate_image_request(body, tx, workers_count)
         }))
         .route("/api/yum/generate/result/:id", get({
             |Path(task_id): Path<String>| fetch_task_result(task_id)
         }))
         .route("/api/yum/generate/result/:id/retry", post({
-            move |Path(task_id): Path<String>| retry_task(task_id, tx, comfy_count)
+            move |Path(task_id): Path<String>| retry_task(task_id, tx, workers_count)
         }))
         .route("/api/yum/generate/queueInfo", get(fetch_queue_info));
 

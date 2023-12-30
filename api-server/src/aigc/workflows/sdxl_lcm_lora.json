@@ -14,7 +14,7 @@
             "weight_interpretation": "comfy",
             "empty_latent_width": 1024,
             "empty_latent_height": 1024,
-            "batch_size": 4
+            "batch_size": 1
         },
         "class_type": "Eff. Loader SDXL"
     },
