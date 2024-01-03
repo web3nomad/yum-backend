@@ -23,13 +23,14 @@ pub async fn request(params: &serde_json::Value)
     };
     tracing::info!(r#"text2prompt "{}" {}"#, user_input, message_str);
 
+    // 这里的 unwrap 要做错误处理
     let message_json: serde_json::Value = serde_json::from_str(&message_str).unwrap();
     let theme = message_json["Theme"].as_str().unwrap();
     let kind = message_json["Kind"].as_str().unwrap();
     let positive_prompt = message_json["Prompt"].as_str().unwrap();
     // let negative_prompt = "((animal)), ((chicken)), ((logo)), human, hand, fingers, nsfw";
     let negative_prompt = message_json["NegativePrompt"].as_str().unwrap();
-    let style_index = if kind == "汉堡" || kind == "鸡肉卷" || kind == "薯条" || kind == "小食" { 1 } else { 0 };
+    let style_index = if kind == "汉堡" || kind == "鸡肉卷" || kind == "小食" { 1 } else { 0 };
 
     let (style_positive, style_negative) = get_style(style_index);
     let positive_prompt = style_positive.replace("{prompt}", positive_prompt);
@@ -44,10 +45,10 @@ pub async fn request(params: &serde_json::Value)
 
 fn get_style(index: usize) -> (&'static str, &'static str) {
     let styles: Vec<(&str, &str)> = vec![(
-        "{prompt}, ((best quality)), 8k",
+        "{prompt}, ((solo food)) in the middle of the picture, close-up shot, ((masterpiece)), ((best quality)), 8k",
         "{prompt}, human, any part of the human body, lowres, bad anatomy, cropped, worst quality, low quality, poorly drawn, ugly, deformities, nsfw"
     ), (
-        "food photography style, {prompt}. appetizing, award-winning, culinary, ((best quality)), 8k",
+        "food photography style, {prompt}. appetizing, award-winning, culinary, ((solo food)) in the middle of the picture, close-up shot, ((masterpiece)), ((best quality)), 8k",
         "{prompt}, unappetizing, sloppy, unprofessional, noisy, blurry, human, any part of the human body, lowres, bad anatomy, cropped, worst quality, low quality, poorly drawn, ugly, deformities, nsfw"
     ), (
         "breathtaking {prompt}. award-winning, professional, highly detailed",
