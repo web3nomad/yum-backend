@@ -23,7 +23,7 @@ pub async fn request(params: &serde_json::Value)
     };
     tracing::info!(r#"text2prompt "{}" {}"#, user_input, message_str);
 
-    // 这里的 unwrap 要做错误处理
+    // ToDo 这里的 unwrap 要做错误处理
     let message_json: serde_json::Value = serde_json::from_str(&message_str).unwrap();
     let theme = message_json["Theme"].as_str().unwrap();
     let kind = message_json["Kind"].as_str().unwrap();

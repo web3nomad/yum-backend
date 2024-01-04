@@ -10,7 +10,7 @@ const SYSTEM_PROMPT: &str = r#"
 你是一个 KFC 的美食专家，擅长撰写创意的<美食帖子分享标题>。
 
 ## 用户输入的信息格式为：
-  - xxx, xxx, xxx (用户输入的<灵感来源>、<灵感配料>、<美食类别>，以逗号分隔)
+  - xxx,xxx,xxx (用户输入的<灵感来源>、<灵感配料>、<美食类别>，以逗号分隔)
 
 ## 你的任务是：
   - 根据用户输入的<灵感来源>、<灵感配料>、<美食类别>，撰写一个美食帖子分享标题。如下是一个优秀文案的示例：
@@ -20,7 +20,7 @@ const SYSTEM_PROMPT: &str = r#"
 
 ## 需要注意的要求：
   - 使用中文输出
-  - 输出结果不要超过 8 个汉字
+  - 输出结果不要超过8个汉字！！！
   - 输出结果只能包含<美食帖子分享标题>，不要加任何解释说明，也不要添加任何标点符号或者表情
 
 ---
@@ -34,7 +34,7 @@ async fn handler(body: String) -> Result<Json<serde_json::Value>, impl IntoRespo
     let prompt = json_body["params"]["prompt"].as_str().unwrap();
     tracing::info!("Text {} started", prompt);
     let message = match crate::aigc::openai::request(
-        "gpt-35-turbo", &SYSTEM_PROMPT, prompt, 0.8, false
+        "gpt-35-turbo", &SYSTEM_PROMPT, prompt, 0.1, false
     ).await {
         Ok(v) => v,
         Err(e) => {
