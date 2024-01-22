@@ -32,8 +32,14 @@ async fn callback_generate_image(
         }))
         .send().await;
     match callback_res {
-        Ok(_) => tracing::info!("Task {} callback success", task_payload.task_id),
-        Err(e) => tracing::error!("Task {} callback failed: {}", task_payload.task_id, e)
+        Ok(r) => {
+            let res_code = r.status();
+            let res_text = r.text().await.unwrap();
+            tracing::info!("Task {} callback success {} {}", task_payload.task_id, res_code, res_text);
+        },
+        Err(e) => {
+            tracing::error!("Task {} callback failed: {}", task_payload.task_id, e);
+        }
     }
 }
 
