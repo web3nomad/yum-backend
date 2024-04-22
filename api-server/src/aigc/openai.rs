@@ -15,11 +15,12 @@ pub async fn request(
     temprature: f32,
     json: bool,
 ) -> Result<String, OpenAIError> {
-    let openai_token = env::var("OPENAI_TOKEN").unwrap();
-    let version = env::var("OPENAI_API_VERSION").unwrap();
-    let endpoint = env::var("OPENAI_ENDPOINT").unwrap();
+    let openai_token = env::var("OPENAI_TOKEN").unwrap_or_default();
+    let version = env::var("OPENAI_API_VERSION").unwrap_or_default();
+    let endpoint = env::var("OPENAI_ENDPOINT").unwrap_or_default();
+    let json_object = env::var("OPENAI_JSON_OBJECT").unwrap_or_default();
 
-    let response_format = if json {
+    let response_format = if json && json_object == "true" {
         "json_object"
     } else {
         "text"
