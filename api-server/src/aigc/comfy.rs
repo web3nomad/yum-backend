@@ -14,6 +14,16 @@ async fn request_one_comfy(
     generation_params: &GenerationParams,
     batch_size: usize
 ) -> Result<Vec<String>, ComfyError> {
+
+    let comfy_request_error = |e: reqwest::Error| {
+        tracing::error!("Failed request comfy: {} {:?}", comfy_origin, e);
+        ComfyError::ReqwestError(reqwest::Error::from(e))
+    };
+    let comfy_parse_error = |e: serde_json::Error| {
+        tracing::error!("Failed parsing comfy response: {} {:?}", comfy_origin, e);
+        ComfyError::SerdeJsonError(e)
+    };
+
     let params = get_sdxl_base_params(generation_params, batch_size);
     let payload = json!({
         "prompt": params,
@@ -21,58 +31,31 @@ async fn request_one_comfy(
     // println!("payload: {:?}", &payload);
     let client = reqwest::Client::new();
     let url = format!("{}/prompt", comfy_origin);
-    let res = match client.post(url).json(&payload).send().await {
-        Ok(v) => v,
-        Err(e) => {
-            tracing::error!("Failed request comfy: {} {:?}", comfy_origin, e);
-            return Err(ComfyError::ReqwestError(e));
-        }
-    };
-    let res_body_text = res.text().await.unwrap();
+    let res = client.post(url).json(&payload).send().await.map_err(comfy_request_error)?;
+    let res_body_text = res.text().await.map_err(comfy_request_error)?;
     // println!("body: {:?}", &res_body_text);
-    let res_body_json: serde_json::Value = match serde_json::from_str(&res_body_text) {
-        Ok(v) => v,
-        Err(e) => {
-            tracing::error!("Failed parsing comfy response: {} {:?}", comfy_origin, e);
-            return Err(ComfyError::SerdeJsonError(e));
-        }
-    };
-    let prompt_id = res_body_json["prompt_id"].as_str().unwrap();
+    let res_body_json: serde_json::Value = serde_json::from_str(&res_body_text).map_err(comfy_parse_error)?;
+    let prompt_id = res_body_json["prompt_id"].as_str().ok_or_else(|| {
+        tracing::error!("Failed parsing comfy response prompt_id: {} {:?}", comfy_origin, res_body_json);
+        ComfyError::Error("Failed parsing comfy response prompt_id".to_owned())
+    })?;
     let base64_images: Vec<String>;
     loop {
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
         let url = format!("{}/history/{}", comfy_origin, prompt_id);
-        let res = match client.get(&url).send().await {
-            Ok(v) => v,
-            Err(e) => {
-                tracing::error!("Failed request comfy result: {} {:?}", comfy_origin, e);
-                return Err(ComfyError::ReqwestError(e));
-            }
-        };
-        let res_body_text = res.text().await.unwrap();
-        let res_body_json: serde_json::Value = match serde_json::from_str(&res_body_text) {
-            Ok(v) => v,
-            Err(e) => {
-                tracing::error!("Failed parsing comfy result: {} {:?}", comfy_origin, e);
-                return Err(ComfyError::SerdeJsonError(e));
-            }
-        };
+        let res = client.get(&url).send().await.map_err(comfy_request_error)?;
+        let res_body_text = res.text().await.map_err(comfy_request_error)?;
+        let res_body_json: serde_json::Value = serde_json::from_str(&res_body_text).map_err(comfy_parse_error)?;
         if let Some(result) = res_body_json.get(prompt_id) {
-            // let images_urls = result["outputs"]["final"]["images"]
-            //     .as_array().unwrap().iter().map(|v| {
-            //         let filename = v["filename"].as_str().unwrap();
-            //         format!("{}/view?filename={}&subfolder=&type=output", comfy_origin, filename)
-            //     }).collect();
-            // base64_images = fetch_images(images_urls).await;
-            let images = match result["outputs"]["final"]["images"].as_array() {
-                Some(v) => v,
-                None => {
-                    tracing::error!("Comfy Error: {} {:?}", comfy_origin, serde_json::to_string(&result));
-                    return Err(ComfyError::Error("Failed parsing comfy result images".to_owned()));
-                }
-            };
+            let images = result["outputs"]["final"]["images"].as_array().ok_or({
+                tracing::error!("Failed parsing comfy result images: {} {:?}", comfy_origin, serde_json::to_string(&result));
+                ComfyError::Error("Failed parsing comfy result images".to_owned())
+            })?;
             base64_images = images
-                .iter().map(|base64_str| base64_str.as_str().unwrap().to_owned())
+                .iter()
+                .map(|base64_str| {
+                    base64_str.as_str().unwrap_or("").to_owned()
+                })
                 .collect();
             break;
         }
@@ -80,7 +63,6 @@ async fn request_one_comfy(
     return Ok(base64_images);
 }
 
-#[allow(dead_code)]
 pub async fn request(
     comfy_origins: &Vec<String>,
     generation_params: &GenerationParams
@@ -108,8 +90,7 @@ pub async fn request(
     }
 }
 
-#[allow(dead_code)]
-async fn fetch_images(images_urls: Vec<String>) -> Vec<String> {
+async fn _fetch_images(images_urls: Vec<String>) -> Vec<String> {
     async fn fetch(image_url: &str) -> String {
         let response = reqwest::get(image_url).await.unwrap();
         let image_bytes = response.bytes().await.unwrap();
