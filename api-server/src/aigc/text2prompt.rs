@@ -1,5 +1,5 @@
 use rand::seq::SliceRandom;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
 pub struct GenerationParams {
@@ -7,12 +7,24 @@ pub struct GenerationParams {
     pub negative: String,
 }
 
+#[derive(Deserialize)]
+pub struct PromptResult {
+    #[serde(rename = "Theme")]
+    pub theme: String,
+    #[serde(rename = "Kind")]
+    pub kind: String,
+    #[serde(rename = "Prompt")]
+    pub prompt: String,
+    #[serde(rename = "NegativePrompt")]
+    pub negative_prompt: String,
+}
+
 const SYSTEM_PROMPT: &str = include_str!("./prompts/prompt_magic.txt");
 
 pub async fn request(params: &serde_json::Value)
     -> Result<(GenerationParams, String), super::openai::OpenAIError>
 {
-    let user_input = params["prompt"].as_str().unwrap();
+    let user_input = params["prompt"].as_str().unwrap_or_default();
     let message_str = match super::openai::request(
         "gpt-4", &SYSTEM_PROMPT, user_input, 0.0, true
     ).await {
@@ -23,18 +35,22 @@ pub async fn request(params: &serde_json::Value)
     };
     tracing::info!(r#"text2prompt "{}" {}"#, user_input, message_str);
 
-    // ToDo 这里的 unwrap 要做错误处理
-    let message_json: serde_json::Value = serde_json::from_str(&message_str).unwrap();
-    let theme = message_json["Theme"].as_str().unwrap();
-    let kind = message_json["Kind"].as_str().unwrap();
-    let positive_prompt = message_json["Prompt"].as_str().unwrap();
+    let prompt_result = match serde_json::from_str::<PromptResult>(&message_str) {
+        Ok(v) => v,
+        Err(e) => {
+            return Err(super::openai::OpenAIError::Error(format!("{:?}", e)));
+        }
+    };
+    let theme = prompt_result.theme;
+    let kind = prompt_result.kind;
+    let positive_prompt = prompt_result.prompt;
     // let negative_prompt = "((animal)), ((chicken)), ((logo)), human, hand, fingers, nsfw";
-    let negative_prompt = message_json["NegativePrompt"].as_str().unwrap();
+    let negative_prompt = prompt_result.negative_prompt;
     let style_index = if kind == "汉堡" || kind == "鸡肉卷" || kind == "小食" { 1 } else { 0 };
 
     let (style_positive, style_negative) = get_style(style_index);
-    let positive_prompt = style_positive.replace("{prompt}", positive_prompt);
-    let negative_prompt = style_negative.replace("{prompt}", negative_prompt);
+    let positive_prompt = style_positive.replace("{prompt}", &positive_prompt);
+    let negative_prompt = style_negative.replace("{prompt}", &negative_prompt);
 
     let generation_params = GenerationParams {
         positive: positive_prompt,
