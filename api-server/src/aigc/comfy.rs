@@ -47,7 +47,7 @@ async fn request_one_comfy(
         let res_body_text = res.text().await.map_err(comfy_request_error)?;
         let res_body_json: serde_json::Value = serde_json::from_str(&res_body_text).map_err(comfy_parse_error)?;
         if let Some(result) = res_body_json.get(prompt_id) {
-            let images = result["outputs"]["final"]["images"].as_array().ok_or({
+            let images = result["outputs"]["final"]["images"].as_array().ok_or_else(|| {
                 tracing::error!("Failed parsing comfy result images: {} {:?}", comfy_origin, serde_json::to_string(&result));
                 ComfyError::Error("Failed parsing comfy result images".to_owned())
             })?;

@@ -80,7 +80,8 @@ async fn handle_generate_image_request(
             Ok(Json(response))
         },
         Err(e) => {
-            tracing::error!("Failed to queue task {}: {}", &task_id, e);
+            tracing::error!("Failed to queue task {} {}", &task_id, e);
+            // 这里只是接口返回 Queue is full, 但实际可能是 panic 了以后 channel closed, 具体要看日志
             Err(BadRequest { message: "Queue is full".to_string() })
         }
     }
