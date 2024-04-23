@@ -34,8 +34,8 @@ async fn callback_generate_image(
     match callback_res {
         Ok(r) => {
             let res_code = r.status();
-            let res_text = r.text().await.unwrap();
-            tracing::info!("Task {} callback success {} {}", task_payload.task_id, res_code, res_text);
+            let res_text = r.text().await.unwrap_or("".to_string());
+            tracing::info!("Task {} callback success: {} {}", task_payload.task_id, res_code, res_text);
         },
         Err(e) => {
             tracing::error!("Task {} callback failed: {}", task_payload.task_id, e);
@@ -52,7 +52,11 @@ async fn process_task(comfy_origins: &Vec<String>, task_payload: &TaskPayload) {
         diesel::update(tasks::table)
             .filter(tasks::task_id.eq(task_id))
             .set(tasks::starts_at.eq(chrono::Utc::now().naive_utc()))
-            .execute(conn).unwrap();
+            .execute(conn)
+            .unwrap_or_else(|e| {
+                tracing::error!("Error updating task: {} {:?}", task_id, e);
+                0
+            });
     }
 
     async fn on_task_end(
@@ -65,12 +69,15 @@ async fn process_task(comfy_origins: &Vec<String>, task_payload: &TaskPayload) {
         diesel::update(tasks::table)
             .filter(tasks::task_id.eq(task_id))
             .set((
-                tasks::generation_params.eq(serde_json::to_string(&generation_params).unwrap()),
-                tasks::result.eq(serde_json::to_string(&result).unwrap()),
+                tasks::generation_params.eq(serde_json::to_string(&generation_params).unwrap_or("".to_string())),
+                tasks::result.eq(serde_json::to_string(&result).unwrap_or("".to_string())),
                 tasks::ends_at.eq(chrono::Utc::now().naive_utc())
             ))
             .execute(conn)
-            .expect("Error updating task");
+            .unwrap_or_else(|e| {
+                tracing::error!("Error updating task: {} {:?}", task_id, e);
+                0
+            });
 
         callback_generate_image(&task_payload, &generation_params, &result).await;
 
