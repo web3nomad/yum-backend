@@ -51,29 +51,40 @@ pub async fn request(
     });
 
     let t = chrono::Utc::now().naive_utc();
-    let res = match reqwest::Client::new()
+    let res = reqwest::Client::new()
         .post(url)
         .header("Content-Type", "application/json")
         .header("api-key", openai_token)
         .json(&payload)
         .send()
-        .await {
-            Ok(v) => v,
-            Err(e) => {
-                tracing::error!("OpenAI Request Error: {:?}", e);
-                return Err(OpenAIError::ReqwestError(e));
-            }
-        };
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed request OpenAI: {:?}", e);
+            OpenAIError::ReqwestError(e)
+        })?;
     let t = (chrono::Utc::now().naive_utc() - t).num_seconds();
 
-    let result_str = res.text().await.unwrap();
+    let result_str = res.text().await.map_err(|e| {
+        tracing::error!("Failed reading OpenAI response: {:?}", e);
+        OpenAIError::Error(format!("Failed reading OpenAI response: {:?}", e))
+    })?;
+
     tracing::debug!("OpenAI Response ({}s): {:?}", t, &result_str);
-    let json_data: serde_json::Value = serde_json::from_str(&result_str).unwrap();
+
+    let json_data: serde_json::Value = serde_json::from_str(&result_str).map_err(|e| {
+        tracing::error!("Failed parsing OpenAI response: {:?}", e);
+        OpenAIError::Error(format!("Failed parsing OpenAI response: {:?}", e))
+    })?;
 
     match json_data["choices"][0]["message"]["content"].as_str() {
         Some(v) => Ok(v.to_string()),
         None => {
-            return Err(OpenAIError::Error(result_str));
+            let msg = format!(
+                r#"Failed reading json_data["choices"][0]["message"]["content"] in OpenAI response: {:?}"#,
+                json_data
+            );
+            tracing::error!("{}", msg);
+            return Err(OpenAIError::Error(msg));
         }
     }
 }

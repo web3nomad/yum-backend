@@ -25,22 +25,18 @@ pub async fn request(params: &serde_json::Value)
     -> Result<(GenerationParams, String), super::openai::OpenAIError>
 {
     let user_input = params["prompt"].as_str().unwrap_or_default();
-    let message_str = match super::openai::request(
+    let message_str = super::openai::request(
         "gpt-4", &SYSTEM_PROMPT, user_input, 0.0, true
-    ).await {
-        Ok(v) => v,
-        Err(e) => {
-            return Err(e);
-        }
-    };
-    tracing::info!(r#"text2prompt "{}" {}"#, user_input, message_str);
+    ).await?;
 
-    let prompt_result = match serde_json::from_str::<PromptResult>(&message_str) {
-        Ok(v) => v,
-        Err(e) => {
-            return Err(super::openai::OpenAIError::Error(format!("{:?}", e)));
-        }
-    };
+    tracing::info!(user_input=user_input, message_str=message_str, "text2prompt result");
+
+    let prompt_result = serde_json::from_str::<PromptResult>(&message_str).map_err(|e| {
+        let msg = format!("Failed to parse text2prompt json: {:?}", e);
+        tracing::error!("{}", msg);
+        super::openai::OpenAIError::Error(msg)
+    })?;
+
     let theme = prompt_result.theme;
     let kind = prompt_result.kind;
     let positive_prompt = prompt_result.prompt;
