@@ -75,12 +75,12 @@ async fn handle_generate_image_request(
 
     match tx.send(task_payload) {
         Ok(rem) => {
-            tracing::info!("Task {} queued, remaining receivers {}", &task_id, rem);
+            tracing::info!(task_id, "Task queued, remaining receivers {}", rem);
             let response = json!({ "taskId": &task_id });
             Ok(Json(response))
         },
         Err(e) => {
-            tracing::error!("Failed to queue task {} {}", &task_id, e);
+            tracing::error!(task_id, "Failed to queue task {}", e);
             // 这里只是接口返回 Queue is full, 但实际可能是 panic 了以后 channel closed, 具体要看日志
             Err(BadRequest { message: "Queue is full".to_string() })
         }
@@ -143,12 +143,12 @@ async fn retry_task(
     };
     match tx.send(task_payload) {
         Ok(rem) => {
-            tracing::info!("Task {} queued, remaining receivers {}", &task_id, rem);
+            tracing::info!(task_id, "Task queued, remaining receivers {}", rem);
             let response = json!({ "taskId": &task_id });
             Ok(Json(response))
         },
         Err(e) => {
-            tracing::error!("Failed to queue task {}: {}", &task_id, e);
+            tracing::error!(task_id, "Failed to queue task {}", e);
             let response = (StatusCode::BAD_REQUEST, "Failed to queue task").into_response();
             Err(response)
         }

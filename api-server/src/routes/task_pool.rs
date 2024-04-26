@@ -35,10 +35,10 @@ async fn callback_generate_image(
         Ok(r) => {
             let res_code = r.status();
             let res_text = r.text().await.unwrap_or("".to_string());
-            tracing::info!("Task {} callback success: {} {}", task_payload.task_id, res_code, res_text);
+            tracing::info!(task_id=task_payload.task_id, "Task callback success {} {}", res_code, res_text);
         },
         Err(e) => {
-            tracing::error!("Task {} callback failed: {}", task_payload.task_id, e);
+            tracing::error!(task_id=task_payload.task_id, "Task callback failed {}", e);
         }
     }
 }
@@ -48,13 +48,13 @@ async fn process_task(comfy_origins: &Vec<String>, task_payload: &TaskPayload) {
     let task_id = &task_payload.task_id;
 
     async fn on_task_start(conn: &mut MysqlConnection, task_id: &str) {
-        tracing::info!("Task {} started", task_id);
+        tracing::info!(task_id, "Task started");
         diesel::update(tasks::table)
             .filter(tasks::task_id.eq(task_id))
             .set(tasks::starts_at.eq(chrono::Utc::now().naive_utc()))
             .execute(conn)
             .unwrap_or_else(|e| {
-                tracing::error!("Error updating task: {} {:?}", task_id, e);
+                tracing::error!(task_id, "Error updating task starts_at {:?}", e);
                 0
             });
     }
@@ -75,13 +75,13 @@ async fn process_task(comfy_origins: &Vec<String>, task_payload: &TaskPayload) {
             ))
             .execute(conn)
             .unwrap_or_else(|e| {
-                tracing::error!("Error updating task: {} {:?}", task_id, e);
+                tracing::error!(task_id, "Error updating task ends_at {:?}", e);
                 0
             });
 
         callback_generate_image(&task_payload, &generation_params, &result).await;
 
-        tracing::info!("Task {} end", task_id);
+        tracing::info!(task_id, "Task end");
     }
 
     on_task_start(conn, task_id).await;
@@ -90,11 +90,11 @@ async fn process_task(comfy_origins: &Vec<String>, task_payload: &TaskPayload) {
         generation_params, theme
     ) = match text2prompt::request(&task_payload.params).await {
         Ok(v) => {
-            tracing::info!("Task {} text2prompt success", task_id);
+            tracing::info!(task_id, "text2prompt success");
             v
         },
         Err(e) => {
-            tracing::error!("Task {} text2prompt failed: {:?}", task_id, e);
+            tracing::error!(task_id, "text2prompt failed {:?}", e);
             let generation_params = GenerationParams {
                 positive: String::from(""),
                 negative: String::from(""),
@@ -114,7 +114,7 @@ async fn process_task(comfy_origins: &Vec<String>, task_payload: &TaskPayload) {
     };
 
     if let Ok(base64_images) = comfy::request(comfy_origins, &generation_params).await {
-        tracing::info!("Task {} comfy success {:?}", task_id, comfy_origins);
+        tracing::info!(task_id, "Task comfy success {:?}", comfy_origins);
 
         let task_id: &str = &task_payload.task_id;
         let format = "jpeg";
@@ -139,7 +139,7 @@ async fn process_task(comfy_origins: &Vec<String>, task_payload: &TaskPayload) {
 
         on_task_end(conn, task_id, &task_payload, &result, &generation_params).await;
     } else {
-        tracing::info!("Task {} comfy failed {:?}", task_id, comfy_origins);
+        tracing::info!(task_id, "Task comfy failed {:?}", comfy_origins);
     }
 }
 
@@ -170,11 +170,11 @@ pub fn init_task_pool() -> (Arc<broadcast::Sender<TaskPayload>>, usize) {
                         if task_payload.channel != index {
                             continue;
                         }
-                        tracing::info!("Task {} received by {:?}", task_payload.task_id, comfy_origins);
+                        tracing::info!(task_id=task_payload.task_id, "Task received by {:?}", comfy_origins);
                         process_task(&comfy_origins, &task_payload).await;
                     },
                     Err(e) => {
-                        tracing::error!("No Task Error: {:?} {:?}", comfy_origins, e);
+                        tracing::error!("Task receive error {:?}", e);
                     }
                 }
             }

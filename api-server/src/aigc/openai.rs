@@ -1,11 +1,20 @@
 use serde_json::json;
-use std::env;
+use std::{env, fmt::Display};
 use reqwest;
 
 #[derive(Debug)]
 pub enum OpenAIError {
     ReqwestError(reqwest::Error),
     Error(String),
+}
+
+impl Display for OpenAIError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OpenAIError::ReqwestError(e) => write!(f, "OpenAIError::ReqwestError: {:?}", e),
+            OpenAIError::Error(e) => write!(f, "OpenAIError::Error: {:?}", e),
+        }
+    }
 }
 
 pub async fn request(
