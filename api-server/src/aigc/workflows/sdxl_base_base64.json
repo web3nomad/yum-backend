@@ -41,10 +41,17 @@
         },
         "class_type": "VAEDecode"
     },
+    "watermark": {
+        "inputs": {
+            "watermark": "环胜电子商务（上海）有限公司",
+            "images": ["40", 0]
+        },
+        "class_type": "InvisibleWatermarkEncode"
+    },
     "final": {
         "inputs": {
-            "extension": "jpeg",
-            "images": ["40", 0]
+            "extension": "png",
+            "images": ["watermark", 0]
         },
         "class_type": "Base64ImageOutput"
     }

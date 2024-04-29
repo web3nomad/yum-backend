@@ -40,7 +40,7 @@ async fn handle_callback(body: String) {
     let base64_images = fetch_images(images_urls).await;
     base64_images.iter().enumerate().for_each(|(index, base64_image)| {
         let image_bytes = data_encoding::BASE64.decode(base64_image.as_bytes()).unwrap();
-        let image_path = format!("test-client/output/{} {} {}.jpeg", user_prompt, theme, index);
+        let image_path = format!("test-client/output/{} {} {}.png", user_prompt, theme, index);
         std::fs::write(image_path, &image_bytes).unwrap();
     });
     let text_content = format!(

@@ -117,7 +117,7 @@ async fn process_task(comfy_origins: &Vec<String>, task_payload: &TaskPayload) {
         tracing::info!(task_id, "Task comfy success {:?}", comfy_origins);
 
         let task_id: &str = &task_payload.task_id;
-        let format = "jpeg";
+        let format = "png";
         let images = base64_images
             .iter()
             .enumerate()
