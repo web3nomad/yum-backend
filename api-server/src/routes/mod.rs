@@ -10,5 +10,5 @@ pub fn get_routes() -> Router {
     Router::new()
         .merge(text::get_routes())
         .merge(image::get_routes())
-        .merge(admin::get_routes())
+        // .merge(admin::get_routes())
 }

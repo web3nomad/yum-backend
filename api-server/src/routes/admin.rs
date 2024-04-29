@@ -12,7 +12,9 @@ use super::database::establish_connection;
 
 #[derive(Deserialize)]
 struct Pagination {
+    page_size: Option<usize>,
     page: Option<usize>,
+    task_id: Option<String>,
 }
 
 fn task_to_html(task: &Task) -> String {
@@ -29,21 +31,28 @@ fn task_to_html(task: &Task) -> String {
         .as_array().unwrap()
         .iter().map(|image| {
             let src = image["src"].as_str().unwrap();
-            format!(r#"<img src="{}" style="margin:2px;" />"#, src)
+            format!(r#"<img src="{}" style="margin-right:2px;" />"#, src)
         })
         .collect::<Vec<String>>()
         .join("\n");
     let theme = result["theme"].as_str().unwrap();
+    let duration = if task.ends_at.is_some() && task.starts_at.is_some() {
+        task.ends_at.unwrap().and_utc() - task.starts_at.unwrap().and_utc()
+    } else {
+        chrono::Duration::zero()
+    };
     let images_line_html = format!(r#"
-        <div>
-            <div style="font-weight:bold;">{} | {} | {}</div>
-            <div>Positive: {}</div>
-            <div>Negative: {}</div>
-            <div style="display:flex;height:300px;">{}</div>
+        <div style="margin-bottom:30px;">
+            <div style="font-weight:bold;margin-bottom:10px;">{} | {} | {} | {} | ({}s)</div>
+            <div style="margin-bottom:10px;font-size:14px;"><strong>Positive</strong>: {}</div>
+            <div style="margin-bottom:10px;font-size:14px;"><strong>Negative</strong>: {}</div>
+            <div style="margin-top:20px;display:flex;height:300px;">{}</div>
         </div>"#,
         &task.task_id,
         user_input,
         theme,
+        &task.starts_at.unwrap_or_default().and_utc(),
+        duration.num_seconds(),
         positive,
         negative,
         images_html
@@ -53,19 +62,35 @@ fn task_to_html(task: &Task) -> String {
 
 async fn handler(pagination: Query<Pagination>) -> Html<String> {
     let conn = &mut establish_connection();
-    let page_size: usize = 10;
+    let page_size: usize = if let Some(page_size) = pagination.page_size {
+        page_size
+    } else {
+        10
+    };
     let offset: usize = if let Some(page) = pagination.page {
         (page - 1) * page_size
     } else {
         0
     };
     // println!("offset: {}", offset);
-    let tasks = tasks::table
-        .order(tasks::id.desc())
-        .limit(page_size.try_into().unwrap())
-        .offset(offset.try_into().unwrap())
-        .load::<Task>(conn)
-        .unwrap();
+    let tasks = if let Some(task_id) = &pagination.task_id {
+        tasks::table
+            .filter(tasks::ends_at.is_not_null())
+            .filter(tasks::task_id.eq(task_id))
+            .order(tasks::updated_at.desc())
+            .limit(page_size.try_into().unwrap())
+            .offset(offset.try_into().unwrap())
+            .load::<Task>(conn)
+            .unwrap()
+    } else {
+        tasks::table
+            .filter(tasks::ends_at.is_not_null())
+            .order(tasks::updated_at.desc())
+            .limit(page_size.try_into().unwrap())
+            .offset(offset.try_into().unwrap())
+            .load::<Task>(conn)
+            .unwrap()
+    };
     let html = tasks
         .iter()
         .map(|task| task_to_html(task))

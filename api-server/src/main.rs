@@ -34,7 +34,8 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(|| async { "Hello, KFC!" }))
-        .merge(api_routes);
+        .merge(api_routes)
+        .merge(routes::admin::get_routes());
 
     let port = env::var("PORT").unwrap_or_else(|_| String::from("3000"));
     let host = env::var("HOST").unwrap_or_else(|_| String::from("0.0.0.0"));
