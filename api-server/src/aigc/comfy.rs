@@ -80,6 +80,19 @@ pub async fn request(
             }
         }
         Ok(base64_images)
+    } else if comfy_origins.len() == 2 {
+        let futures = comfy_origins.iter().map(|comfy_origin| {
+            request_one_comfy(comfy_origin, generation_params, 2)
+        }).collect::<Vec<_>>();
+        let results = join_all(futures).await;
+        let mut base64_images: Vec<String> = vec![];
+        for result in results {
+            match result {
+                Ok(mut v) => base64_images.append(&mut v),
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(base64_images)
     } else if comfy_origins.len() == 1 {
         let comfy_origin = comfy_origins[0].as_str();
         let batch_size = 4;

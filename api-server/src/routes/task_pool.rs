@@ -151,14 +151,19 @@ pub fn init_task_pool() -> (Arc<broadcast::Sender<TaskPayload>>, usize) {
     let tx = Arc::new(tx);
 
     let comfy_count = comfy_origins.len();
-    let (workers_count, comfy_origins_group): (usize, Vec<Vec<String>>) = if comfy_count == 4 {
-        (1, vec![comfy_origins])
+    let (
+        workers_count, comfy_origins_group
+    ): (usize, Vec<Vec<String>>) = if comfy_count % 2 == 0 {
+        let comfy_origins_group = comfy_origins
+            .chunks(2)
+            .map(|chunk| chunk.to_vec()).collect::<Vec<_>>();
+        (comfy_count / 2, comfy_origins_group)
     } else {
-        let comfy_origins = comfy_origins
+        let comfy_origins_group = comfy_origins
             .iter()
             .map(|comfy_origin| vec![comfy_origin.clone()])
             .collect::<Vec<_>>();
-        (comfy_count, comfy_origins)
+        (comfy_count, comfy_origins_group)
     };
     comfy_origins_group.iter().enumerate().for_each(|(index, comfy_origins)| {
         let comfy_origins = comfy_origins.clone();
