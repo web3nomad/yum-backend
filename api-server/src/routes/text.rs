@@ -38,7 +38,7 @@ async fn handler(body: String) -> Result<Json<serde_json::Value>, impl IntoRespo
     ).await {
         Ok(v) => v,
         Err(e) => {
-            tracing::error!("Error: {:?}", e);
+            tracing::warn!("OpenAI Error: {:?}", e);
             return Err((StatusCode::INTERNAL_SERVER_ERROR, "Server Error").into_response());
         }
     };
