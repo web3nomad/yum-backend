@@ -1,6 +1,6 @@
 [package]
 name = "api-server"
-version = "1.0.2"
+version = "1.0.3"
 publish = false
 edition = "2021"
 

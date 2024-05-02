@@ -90,11 +90,11 @@
 
 ## RESULT:
 {
-  "Transform": xxx, xxx, xxx (用户输入的<灵感来源>、<灵感配料>、<美食类别>转换后的元素，英文),
-  "Kind": xxx (推理出来的<食物大类>，中文),
-  "Prompt": xxx (prompt，英文),
-  "NegativePrompt": xxx (负面提示词，英文),
-  "Theme": xxx (中文的<美食帖子分享标题>)
+  "Transform": "xxx, xxx, xxx",     // 用户输入的<灵感来源>、<灵感配料>、<美食类别>转换后的元素，英文
+  "Kind": "xxx",                    // 推理出来的<食物大类>，中文
+  "Prompt": "xxx",                  // prompt，英文
+  "NegativePrompt": "xxx",          // 负面提示词，英文
+  "Theme": "xxx"                    // 中文的<美食帖子分享标题>
 }
 
 ** 请你尽你所能完成这个生成快餐食物特效照片 prompt 的任务，如果你生成的 <RESULT> 画面十分完美并且被用户所采纳，你将得到 $2,000 美元的奖励！！！**
