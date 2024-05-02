@@ -27,7 +27,13 @@ pub async fn request(params: &serde_json::Value)
     let mut user_input = params["prompt"].as_str().unwrap_or_default().to_owned();
 
     if user_input.contains("猪") {
-        user_input = user_input.replace("猪", "pork");
+        user_input = user_input.replace("猪", " pork ");
+    }
+    if user_input.contains("鸡") {
+        user_input = user_input.replace("鸡", " chicken ");
+    }
+    if user_input.contains("胸") {
+        user_input = user_input.replace("胸", " chest ");
     }
 
     let message_str = super::openai::request(
