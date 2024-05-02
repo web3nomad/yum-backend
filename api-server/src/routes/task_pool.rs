@@ -94,7 +94,8 @@ async fn process_task(comfy_origins: &Vec<String>, task_payload: &TaskPayload) {
             v
         },
         Err(e) => {
-            tracing::error!(task_id, "text2prompt failed {:?}", e);
+            // 错误在 openai.rs 和 text2prompt.rs 里面都处理过了
+            tracing::warn!(task_id, "text2prompt failed {:?}", e);
             let generation_params = GenerationParams {
                 positive: String::from(""),
                 negative: String::from(""),
@@ -175,11 +176,11 @@ pub fn init_task_pool() -> (Arc<broadcast::Sender<TaskPayload>>, usize) {
                         if task_payload.channel != index {
                             continue;
                         }
-                        tracing::info!(task_id=task_payload.task_id, "Task received by {:?}", comfy_origins);
+                        tracing::info!(task_id=task_payload.task_id, rx_len=rx.len(), "Task received by {:?}", comfy_origins);
                         process_task(&comfy_origins, &task_payload).await;
                     },
                     Err(e) => {
-                        tracing::error!("Task receive error {:?}", e);
+                        tracing::error!(rx_len=rx.len(), "Task receive error {:?}", e);
                     }
                 }
             }

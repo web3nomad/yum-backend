@@ -5,6 +5,7 @@ use reqwest;
 #[derive(Debug)]
 pub enum OpenAIError {
     ReqwestError(reqwest::Error),
+    Filtered(String),
     Error(String),
 }
 
@@ -12,6 +13,7 @@ impl Display for OpenAIError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             OpenAIError::ReqwestError(e) => write!(f, "OpenAIError::ReqwestError: {:?}", e),
+            OpenAIError::Filtered(e) => write!(f, "OpenAIError::Filtered: {:?}", e),
             OpenAIError::Error(e) => write!(f, "OpenAIError::Error: {:?}", e),
         }
     }
@@ -84,6 +86,22 @@ pub async fn request(
         tracing::error!("Failed parsing OpenAI response: {:?}", e);
         OpenAIError::Error(format!("Failed parsing OpenAI response: {:?}", e))
     })?;
+
+    if let Some(reason) = json_data["choices"][0]["finish_reason"].as_str() {
+        if reason == "content_filter" {
+            let msg = format!("OpenAI content filter triggered: {}", prompt);
+            tracing::warn!("{}", msg);
+            return Err(OpenAIError::Filtered(msg));
+        }
+    };
+
+    if let Some(code) = json_data["error"]["code"].as_str() {
+        if code == "content_filter" {
+            let msg = format!("OpenAI content filter triggered: {}", prompt);
+            tracing::warn!("{}", msg);
+            return Err(OpenAIError::Filtered(msg));
+        }
+    };
 
     match json_data["choices"][0]["message"]["content"].as_str() {
         Some(v) => Ok(v.to_string()),
