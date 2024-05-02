@@ -1,5 +1,6 @@
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
+use super::filter::modify_text;
 
 #[derive(Serialize)]
 pub struct GenerationParams {
@@ -24,18 +25,8 @@ const SYSTEM_PROMPT: &str = include_str!("./prompts/prompt_magic.txt");
 pub async fn request(params: &serde_json::Value)
     -> Result<(GenerationParams, String), super::openai::OpenAIError>
 {
-    let mut user_input = params["prompt"].as_str().unwrap_or_default().to_owned();
-
-    if user_input.contains("猪") {
-        user_input = user_input.replace("猪", " pork ");
-    }
-    if user_input.contains("鸡") {
-        user_input = user_input.replace("鸡", " chicken ");
-    }
-    if user_input.contains("胸") {
-        user_input = user_input.replace("胸", " chest ");
-    }
-
+    let user_input = params["prompt"].as_str().unwrap_or_default();
+    let user_input = modify_text(user_input);
     let message_str = super::openai::request(
         "gpt-4", &SYSTEM_PROMPT, &user_input, 0.0, true
     ).await?;

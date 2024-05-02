@@ -5,6 +5,7 @@ use axum::{
     Router,
     http::StatusCode,
 };
+use super::super::aigc::filter::modify_text;
 
 const SYSTEM_PROMPT: &str = r#"
 你是一个 KFC 的美食专家，擅长撰写创意的<美食帖子分享标题>。
@@ -33,8 +34,9 @@ async fn handler(body: String) -> Result<Json<serde_json::Value>, impl IntoRespo
     let params = &json_body["params"];
     let prompt = json_body["params"]["prompt"].as_str().unwrap();
     tracing::info!("Text {} started", prompt);
+    let prompt = modify_text(prompt);
     let message = match crate::aigc::openai::request(
-        "gpt-35-turbo", &SYSTEM_PROMPT, prompt, 0.1, false
+        "gpt-35-turbo", &SYSTEM_PROMPT, &prompt, 0.1, false
     ).await {
         Ok(v) => v,
         Err(e) => {
