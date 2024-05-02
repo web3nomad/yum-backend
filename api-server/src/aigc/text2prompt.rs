@@ -24,18 +24,22 @@ const SYSTEM_PROMPT: &str = include_str!("./prompts/prompt_magic.txt");
 pub async fn request(params: &serde_json::Value)
     -> Result<(GenerationParams, String), super::openai::OpenAIError>
 {
-    let user_input = params["prompt"].as_str().unwrap_or_default();
+    let mut user_input = params["prompt"].as_str().unwrap_or_default().to_owned();
+
+    if user_input.contains("猪") {
+        user_input = user_input.replace("猪", "pork");
+    }
+
     let message_str = super::openai::request(
-        "gpt-4", &SYSTEM_PROMPT, user_input, 0.0, true
+        "gpt-4", &SYSTEM_PROMPT, &user_input, 0.0, true
     ).await?;
 
-    tracing::info!(user_input=user_input, message_str=message_str, "text2prompt result");
-
     let prompt_result = serde_json::from_str::<PromptResult>(&message_str).map_err(|e| {
-        let msg = format!("Failed to parse text2prompt json: {:?}", e);
-        tracing::error!("{}", msg);
-        super::openai::OpenAIError::Error(msg)
+        tracing::warn!(user_input=user_input, "text2prompt result {}", message_str);
+        super::openai::OpenAIError::Error(format!("Failed to parse text2prompt json: {:?}", e))
     })?;
+
+    tracing::info!(user_input=user_input, "text2prompt result {}", message_str);
 
     let theme = prompt_result.theme;
     let kind = prompt_result.kind;

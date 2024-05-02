@@ -80,7 +80,7 @@ pub async fn request(
         OpenAIError::Error(format!("Failed reading OpenAI response: {:?}", e))
     })?;
 
-    tracing::debug!("OpenAI Response ({}s): {:?}", t, &result_str);
+    tracing::debug!("OpenAI Response ({}s): {}", t, &result_str);
 
     let json_data: serde_json::Value = serde_json::from_str(&result_str).map_err(|e| {
         tracing::error!("Failed parsing OpenAI response: {:?}", e);
