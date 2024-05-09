@@ -36,7 +36,7 @@ async fn handler(body: String) -> Result<Json<serde_json::Value>, impl IntoRespo
     tracing::info!("Text {} started", prompt);
     let prompt = modify_text(prompt);
     let message = match crate::aigc::openai::request(
-        "gpt-35-turbo", &SYSTEM_PROMPT, &prompt, 0.1, false
+        "gpt-3.5", &SYSTEM_PROMPT, &prompt, 0.1, false
     ).await {
         Ok(v) => v,
         Err(e) => {

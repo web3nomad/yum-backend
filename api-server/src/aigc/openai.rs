@@ -26,10 +26,19 @@ pub async fn request(
     temprature: f32,
     json: bool,
 ) -> Result<String, OpenAIError> {
-    let openai_token = env::var("OPENAI_TOKEN").unwrap_or_default();
-    let version = env::var("OPENAI_API_VERSION").unwrap_or_default();
-    let endpoint = env::var("OPENAI_ENDPOINT").unwrap_or_default();
-    let json_object = env::var("OPENAI_JSON_OBJECT").unwrap_or_default();
+    let openai_token = env::var("OPENAI_TOKEN").unwrap();
+    let version = env::var("OPENAI_API_VERSION").unwrap();
+    let endpoint = env::var("OPENAI_ENDPOINT").unwrap();
+    let json_object = env::var("OPENAI_JSON_OBJECT").unwrap();
+    let deployment_name = {
+        let deployments = env::var("OPENAI_DEPLOYMENTS").unwrap()
+            .split(",").map(|s| s.to_string()).collect::<Vec<_>>();
+        match model_name {
+            "gpt-3.5" => deployments[0].to_string(),
+            "gpt-4" => deployments[1].to_string(),
+            _ => model_name.to_string(),
+        }
+    };
 
     let response_format = if json && json_object == "true" {
         "json_object"
@@ -47,7 +56,7 @@ pub async fn request(
 
     let url = format!(
         "https://{}.openai.azure.com/openai/deployments/{}/chat/completions?api-version={}",
-        endpoint, model_name, version);
+        endpoint, deployment_name, version);
     let payload = json!({
         "messages": messages,
         "response_format": {
